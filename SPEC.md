@@ -161,7 +161,9 @@ Also read held packages from `apt-mark showhold` to be safe.
 
 ### 5.3 Available updates: `apt-get -s dist-upgrade`
 
-Run `LC_ALL=C apt-get -s -o Debug::NoLocking=true dist-upgrade` and parse its lines:
+Despite its name, `dist-upgrade` doesn't move the host to a new release (for example from Ubuntu 24.04 to 26.04). It upgrades the installed packages to the newest versions in the release the host already uses, like `upgrade`, but it may also install new packages and remove old ones when an update needs that. New kernels are the usual case: each kernel version is a new package, so `upgrade` keeps it back and `dist-upgrade` installs it. `apt full-upgrade` is the same command. Moving to a new release is a separate job (`do-release-upgrade` on Ubuntu). With `-s`, apt only simulates: it prints what it would do and changes nothing.
+
+Run `LC_ALL=C apt-get -s -q -o Debug::NoLocking=true dist-upgrade` twice, once with `-o APT::Get::Always-Include-Phased-Updates=true`, and parse their lines:
 
 ```
 Inst libssl3 [3.0.13-0ubuntu3.4] (3.0.13-0ubuntu3.5 Ubuntu:24.04/noble-updates, Ubuntu:24.04/noble-security [amd64])
@@ -173,7 +175,8 @@ For each `Inst`, record: package, old version (if present), candidate version, a
 
 - **Security update**: any suite matching `*-security` (Ubuntu, Debian 12/13 `bookworm-security`, `trixie-security`), or the origin `Debian-Security`.
 - **ESM**: origin `UbuntuESM` / `UbuntuESMApps`. Mark these "requires Ubuntu Pro".
-- **Kept back / phased**: also run `apt-get -s upgrade` and compare. Packages in `dist-upgrade` but not in `upgrade` are "needs new dependencies". apt's phasing output on Ubuntu (`deferred due to phasing`) is recorded so phased updates aren't reported as overdue.
+- **Phased**: updates come from the run that includes phased updates. Those the normal run defers are marked phased, so they aren't reported as overdue: the ones listed under `The following upgrades have been deferred due to phasing:` (apt 2.8 and later), and any it doesn't install at all. apt 2.4 (Ubuntu 22.04) has no phasing header and lists phased updates as kept back, so only the second test finds them there.
+- **Kept back**: also run `apt-get -s upgrade` and compare. Packages in `dist-upgrade` but not in `upgrade` are "needs new dependencies".
 - **Held** packages that have a candidate are reported, at higher severity if the candidate is a security update.
 
 `apt-cache policy <pkg>` is only used as a fallback for unclear cases (e.g. to get the origin for a package that the simulation doesn't show).
@@ -539,7 +542,7 @@ testdata/               dpkg status files, apt-get -s outputs, vuln data fixture
 
 ## 13. Testing
 
-- **Unit tests**: `debver` with Debian's own comparison test vectors; parsers fed real `dpkg/status` and `apt-get -s` outputs captured from every supported release; matching truth tables; risk escalation; state diffing.
+- **Unit tests**: `debver` with Debian's own comparison test vectors; parsers fed synthetic `dpkg/status` and `apt-get -s` outputs in the format each supported release's apt version prints (2.4 on Ubuntu 22.04, 2.6 on Debian 12, 2.8 on Ubuntu 24.04, 3.0 on Debian 13, 3.1 on Ubuntu 26.04), including phased updates, Debian and Ubuntu origin labels, ESM and each release's kernel package names; matching truth tables; risk escalation; state diffing.
 - **Golden-file tests** for each report format.
 - **`aptwatch cve`**: every status, the fix command, kernels and reboots, and the formats, on synthetic packages and advisories (never a real host's package list). First-seen dates: seeding, later dating, reseeding and the KEV fallback.
 - **Report tests**: every format carries the same sections; hostile package text is escaped in HTML.

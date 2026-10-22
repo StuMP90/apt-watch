@@ -50,7 +50,7 @@ type Update struct {
 type Simulation struct {
 	Updates  []Update `json:"updates"`
 	Removals []string `json:"removals,omitempty"`
-	Phased   []string `json:"phased,omitempty"` // names listed as "deferred due to phasing"
+	Phased   []string `json:"phased,omitempty"` // names apt is deferring due to phasing
 }
 
 // IsSecurityOrigin reports whether an origin label is a security archive.
@@ -190,16 +190,33 @@ func SimulateUpgrade(ctx context.Context) (*Simulation, error) {
 	if err != nil {
 		return nil, err
 	}
+	return MergePhased(all, normal), nil
+}
+
+// MergePhased marks the updates in all, the run including phased updates,
+// that normal, the run without them, defers: those under its phasing
+// header, and those it doesn't install at all. apt before 2.8 has no
+// phasing header and lists phased updates as kept back, so only the
+// second test finds them there.
+func MergePhased(all, normal *Simulation) *Simulation {
 	phased := map[string]bool{}
 	for _, p := range normal.Phased {
 		phased[p] = true
 	}
-	all.Phased = normal.Phased
+	installs := map[string]bool{}
+	for _, u := range normal.Updates {
+		installs[u.Package+":"+u.Arch] = true
+	}
+	all.Phased = append([]string(nil), normal.Phased...)
 	for i := range all.Updates {
 		u := &all.Updates[i]
 		u.Phased = phased[u.Package] || phased[u.Package+":"+u.Arch]
+		if !u.Phased && !installs[u.Package+":"+u.Arch] {
+			u.Phased = true
+			all.Phased = append(all.Phased, u.Package)
+		}
 	}
-	return all, nil
+	return all
 }
 
 // ResolveSources fills in Source and SourceVersion of each update from

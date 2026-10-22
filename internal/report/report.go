@@ -449,7 +449,7 @@ func (r *Report) suggestions() []string {
 		cmds = append(cmds, "sudo apt-get install --only-upgrade "+strings.Join(sec, " "))
 	}
 	if installable > len(sec) {
-		cmds = append(cmds, "sudo apt-get update && sudo apt-get dist-upgrade")
+		cmds = append(cmds, "sudo apt-get update && sudo apt-get dist-upgrade  # all pending updates for this release, including new kernels; doesn't change release")
 	}
 	if r.System.Reboot.Required || (r.System.Kernel.Newest != "" && r.System.Kernel.Newest != r.System.Kernel.Running) {
 		cmds = append(cmds, "sudo reboot")

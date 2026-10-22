@@ -44,6 +44,8 @@ The full design is in [SPEC.md](SPEC.md).
 | Debian | 12 (bookworm), 13 (trixie) |
 | Ubuntu | 22.04, 24.04, 26.04 LTS, with or without Ubuntu Pro |
 
+So far aptwatch has been run on real hosts with Debian 13 (trixie) and Ubuntu 24.04 LTS with Ubuntu Pro only. The other releases are covered by unit tests on synthetic apt output in their apt versions' formats, not yet by real-host runs.
+
 Hosts need outbound HTTPS access to the vulnerability data sources and to their apt mirrors.
 
 ## Building
@@ -481,7 +483,9 @@ The report also lists each third-party repository with its packages. Repositorie
 | `/var/cache/aptwatch/` | Vulnerability data, Debian first-seen dates, downloaded changelogs |
 | `/run/aptwatch.lock` | Stops two runs overlapping |
 
-aptwatch only reads the package database and runs `apt-get update` and `apt-get download`. It never installs, upgrades or removes anything.
+aptwatch only reads the package database and runs `apt-get update`, `apt-get download` and `apt-get -s dist-upgrade`. The `-s` means simulate: apt lists the updates it would install and changes nothing. aptwatch never installs, upgrades or removes anything.
+
+The report's suggested commands may include `sudo apt-get dist-upgrade`. Despite the name, this doesn't upgrade to a new release (for example from Ubuntu 24.04 to 26.04). It installs every pending update for the release the host already runs. Unlike `apt-get upgrade`, it can also install new packages that an update needs, such as a new kernel, and remove packages that the update replaces.
 
 ## Development
 

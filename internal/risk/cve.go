@@ -151,9 +151,10 @@ func CVEFindings(inv *collect.Inventory, db *vulndb.DB, p Policy) []Finding {
 }
 
 // abiPkg matches a kernel binary whose name carries its ABI, e.g.
-// linux-modules-6.8.0-91-generic. A new kernel is a new package, so old
-// ones stay installed at their old version and never get upgraded.
-var abiPkg = regexp.MustCompile(`^linux-(image|modules|headers|tools|cloud-tools|buildinfo|objects)(-[a-z]+)*-\d+\.\d+\.\d+-\d+`)
+// linux-modules-6.8.0-91-generic, or Debian 13's linux-image-6.12.48+deb13-amd64.
+// A new kernel is a new package, so old ones stay installed at their old
+// version and never get upgraded.
+var abiPkg = regexp.MustCompile(`^linux-(image|modules|headers|tools|cloud-tools|buildinfo|objects)(-[a-z]+)*-\d+\.\d+\.\d+(-\d+|\+deb\d+)`)
 
 // otherKernels returns the kernel source packages that don't build the
 // kernel that will run after the next reboot (the newest installed one).

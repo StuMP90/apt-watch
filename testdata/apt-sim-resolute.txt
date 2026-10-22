@@ -1,0 +1,19 @@
+NOTE: This is only a simulation!
+      apt-get needs root privileges for real execution.
+      Keep also in mind that locking is deactivated,
+      so don't depend on the relevance to the real current situation!
+Reading package lists...
+Building dependency tree...
+Reading state information...
+Calculating upgrade...
+The following upgrades have been deferred due to phasing:
+  libsystemd0 systemd
+The following packages will be upgraded:
+  libssl3t64 libxml2-16 openssl
+3 upgraded, 0 newly installed, 0 to remove and 2 not upgraded.
+Inst libssl3t64 [3.5.3-1ubuntu2] (3.5.3-1ubuntu2.1 Ubuntu:26.04/resolute-updates, Ubuntu:26.04/resolute-security [amd64])
+Inst openssl [3.5.3-1ubuntu2] (3.5.3-1ubuntu2.1 Ubuntu:26.04/resolute-updates, Ubuntu:26.04/resolute-security [amd64])
+Inst libxml2-16 [2.14.5+dfsg-0.2ubuntu1] (2.14.5+dfsg-0.2ubuntu1+esm1 UbuntuESMApps:26.04/resolute-apps-security [amd64])
+Conf libssl3t64 (3.5.3-1ubuntu2.1 Ubuntu:26.04/resolute-updates, Ubuntu:26.04/resolute-security [amd64])
+Conf openssl (3.5.3-1ubuntu2.1 Ubuntu:26.04/resolute-updates, Ubuntu:26.04/resolute-security [amd64])
+Conf libxml2-16 (2.14.5+dfsg-0.2ubuntu1+esm1 UbuntuESMApps:26.04/resolute-apps-security [amd64])

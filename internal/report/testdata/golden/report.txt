@@ -54,7 +54,7 @@ Pending updates (5)
 
 Suggested commands
   sudo apt-get install --only-upgrade libssl3t64 openssl python3-example
-  sudo apt-get update && sudo apt-get dist-upgrade
+  sudo apt-get update && sudo apt-get dist-upgrade  # all pending updates for this release, including new kernels; doesn't change release
   sudo reboot
 
 Warnings

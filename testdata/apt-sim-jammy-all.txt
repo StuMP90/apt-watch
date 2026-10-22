@@ -1,0 +1,36 @@
+NOTE: This is only a simulation!
+      apt-get needs root privileges for real execution.
+      Keep also in mind that locking is deactivated,
+      so don't depend on the relevance to the real current situation!
+Reading package lists...
+Building dependency tree...
+Reading state information...
+Calculating upgrade...
+The following NEW packages will be installed:
+  linux-image-5.15.0-130-generic linux-modules-5.15.0-130-generic
+The following packages have been kept back:
+  ubuntu-pro-client
+The following packages will be upgraded:
+  cloud-init libavcodec58 libssl3 linux-generic linux-image-generic openssl
+  python3-software-properties software-properties-common
+8 upgraded, 2 newly installed, 0 to remove and 1 not upgraded.
+Inst libssl3 [3.0.2-0ubuntu1.18] (3.0.2-0ubuntu1.19 Ubuntu:22.04/jammy-updates, Ubuntu:22.04/jammy-security [amd64])
+Inst linux-modules-5.15.0-130-generic (5.15.0-130.140 Ubuntu:22.04/jammy-updates, Ubuntu:22.04/jammy-security [amd64])
+Inst linux-image-5.15.0-130-generic (5.15.0-130.140 Ubuntu:22.04/jammy-updates, Ubuntu:22.04/jammy-security [amd64])
+Inst linux-generic [5.15.0.127.126] (5.15.0.130.129 Ubuntu:22.04/jammy-updates, Ubuntu:22.04/jammy-security [amd64]) []
+Inst linux-image-generic [5.15.0.127.126] (5.15.0.130.129 Ubuntu:22.04/jammy-updates, Ubuntu:22.04/jammy-security [amd64])
+Inst openssl [3.0.2-0ubuntu1.18] (3.0.2-0ubuntu1.19 Ubuntu:22.04/jammy-updates, Ubuntu:22.04/jammy-security [amd64])
+Inst libavcodec58 [7:4.4.2-0ubuntu0.22.04.1+esm6] (7:4.4.2-0ubuntu0.22.04.1+esm7 UbuntuESMApps:22.04/jammy-apps-security [amd64])
+Inst python3-software-properties [0.99.22.9] (0.99.22.10 Ubuntu:22.04/jammy-updates [all]) []
+Inst software-properties-common [0.99.22.9] (0.99.22.10 Ubuntu:22.04/jammy-updates [all])
+Inst cloud-init [24.4-0ubuntu1~22.04.1] (25.1-0ubuntu1~22.04.1 Ubuntu:22.04/jammy-updates [all])
+Conf libssl3 (3.0.2-0ubuntu1.19 Ubuntu:22.04/jammy-updates, Ubuntu:22.04/jammy-security [amd64])
+Conf linux-modules-5.15.0-130-generic (5.15.0-130.140 Ubuntu:22.04/jammy-updates, Ubuntu:22.04/jammy-security [amd64])
+Conf linux-image-5.15.0-130-generic (5.15.0-130.140 Ubuntu:22.04/jammy-updates, Ubuntu:22.04/jammy-security [amd64])
+Conf linux-generic (5.15.0.130.129 Ubuntu:22.04/jammy-updates, Ubuntu:22.04/jammy-security [amd64])
+Conf linux-image-generic (5.15.0.130.129 Ubuntu:22.04/jammy-updates, Ubuntu:22.04/jammy-security [amd64])
+Conf openssl (3.0.2-0ubuntu1.19 Ubuntu:22.04/jammy-updates, Ubuntu:22.04/jammy-security [amd64])
+Conf libavcodec58 (7:4.4.2-0ubuntu0.22.04.1+esm7 UbuntuESMApps:22.04/jammy-apps-security [amd64])
+Conf python3-software-properties (0.99.22.10 Ubuntu:22.04/jammy-updates [all])
+Conf software-properties-common (0.99.22.10 Ubuntu:22.04/jammy-updates [all])
+Conf cloud-init (25.1-0ubuntu1~22.04.1 Ubuntu:22.04/jammy-updates [all])

@@ -1,0 +1,25 @@
+NOTE: This is only a simulation!
+      apt-get needs root privileges for real execution.
+      Keep also in mind that locking is deactivated,
+      so don't depend on the relevance to the real current situation!
+Reading package lists...
+Building dependency tree...
+Reading state information...
+Calculating upgrade...
+The following NEW packages will be installed:
+  linux-image-6.12.48+deb13-amd64
+The following packages will be upgraded:
+  libssl3t64 linux-image-amd64 openssl openssl-provider-legacy systemd
+5 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
+Inst libssl3t64 [3.5.1-1] (3.5.1-1+deb13u1 Debian-Security:13/stable-security [amd64]) []
+Inst openssl-provider-legacy [3.5.1-1] (3.5.1-1+deb13u1 Debian-Security:13/stable-security [amd64])
+Inst openssl [3.5.1-1] (3.5.1-1+deb13u1 Debian-Security:13/stable-security [amd64])
+Inst linux-image-6.12.48+deb13-amd64 (6.12.48-1 Debian-Security:13/stable-security [amd64])
+Inst linux-image-amd64 [6.12.43-1] (6.12.48-1 Debian-Security:13/stable-security [amd64])
+Inst systemd [257.8-1~deb13u1] (257.8-1~deb13u2 Debian:13.1/stable [amd64])
+Conf libssl3t64 (3.5.1-1+deb13u1 Debian-Security:13/stable-security [amd64])
+Conf openssl-provider-legacy (3.5.1-1+deb13u1 Debian-Security:13/stable-security [amd64])
+Conf openssl (3.5.1-1+deb13u1 Debian-Security:13/stable-security [amd64])
+Conf linux-image-6.12.48+deb13-amd64 (6.12.48-1 Debian-Security:13/stable-security [amd64])
+Conf linux-image-amd64 (6.12.48-1 Debian-Security:13/stable-security [amd64])
+Conf systemd (257.8-1~deb13u2 Debian:13.1/stable [amd64])

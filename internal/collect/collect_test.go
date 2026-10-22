@@ -3,6 +3,7 @@ package collect
 import (
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -78,25 +79,80 @@ func TestParseSimulationMixed(t *testing.T) {
 	}
 }
 
-func TestParseSimulationRealNoble(t *testing.T) {
-	deferred, err := ParseSimulation(openFixture(t, "apt-sim-noble-phased.txt"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(deferred.Updates) != 0 || len(deferred.Phased) != 9 {
-		t.Errorf("deferred run: %d updates, %d phased; want 0, 9", len(deferred.Updates), len(deferred.Phased))
-	}
-	all, err := ParseSimulation(openFixture(t, "apt-sim-noble-include-phased.txt"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(all.Updates) != 9 {
-		t.Fatalf("include-phased run: %d updates, want 9", len(all.Updates))
-	}
-	for _, u := range all.Updates {
-		if u.Security || u.Installed == "" || u.Origins[0].Suite != "noble-updates" {
-			t.Errorf("unexpected update %+v", u)
-		}
+// TestParseSimulationReleases runs the parser over synthetic apt-get -s
+// output in each supported release's format: name.txt from the normal run
+// and name-all.txt from the one including phased updates. apt 2.8 and later
+// list deferred updates under a phasing header; apt 2.4 lists them as kept
+// back, with unrelated holds. Debian doesn't phase, so its runs are the same.
+func TestParseSimulationReleases(t *testing.T) {
+	for _, tc := range []struct {
+		name, all     string
+		updates       int
+		header        []string // listed under the phasing header
+		phased        []string
+		security, esm []string
+	}{
+		{name: "jammy", all: "jammy-all", updates: 10,
+			phased:   []string{"cloud-init", "python3-software-properties", "software-properties-common"},
+			security: []string{"libavcodec58", "libssl3", "linux-generic", "linux-image-5.15.0-130-generic", "linux-image-generic", "linux-modules-5.15.0-130-generic", "openssl"},
+			esm:      []string{"libavcodec58"}},
+		{name: "noble", all: "noble-all", updates: 6,
+			header:   []string{"cloud-init", "libglib2.0-0t64", "libglib2.0-bin", "libglib2.0-data"},
+			phased:   []string{"cloud-init", "libglib2.0-0t64", "libglib2.0-bin", "libglib2.0-data"},
+			security: []string{"libssl3t64", "openssl"}},
+		{name: "resolute", all: "resolute-all", updates: 5,
+			header:   []string{"libsystemd0", "systemd"},
+			phased:   []string{"libsystemd0", "systemd"},
+			security: []string{"libssl3t64", "libxml2-16", "openssl"},
+			esm:      []string{"libxml2-16"}},
+		{name: "bookworm", all: "bookworm", updates: 8,
+			security: []string{"libssl3", "linux-image-6.1.0-42-amd64", "linux-image-amd64", "openssl"}},
+		{name: "trixie", all: "trixie", updates: 6,
+			security: []string{"libssl3t64", "linux-image-6.12.48+deb13-amd64", "linux-image-amd64", "openssl", "openssl-provider-legacy"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			normal, err := ParseSimulation(openFixture(t, "apt-sim-"+tc.name+".txt"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !slices.Equal(normal.Phased, tc.header) {
+				t.Errorf("phasing header = %v, want %v", normal.Phased, tc.header)
+			}
+			all, err := ParseSimulation(openFixture(t, "apt-sim-"+tc.all+".txt"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			sim := MergePhased(all, normal)
+			if len(sim.Updates) != tc.updates {
+				t.Fatalf("%d updates, want %d", len(sim.Updates), tc.updates)
+			}
+			var phased, sec, esm []string
+			for _, u := range sim.Updates {
+				if u.Candidate == "" || u.Arch == "" || len(u.Origins) == 0 {
+					t.Errorf("incomplete update %+v", u)
+				}
+				if u.Phased {
+					phased = append(phased, u.Package)
+				}
+				if u.Security {
+					sec = append(sec, u.Package)
+				}
+				if u.ESM {
+					esm = append(esm, u.Package)
+				}
+			}
+			for _, l := range [][]string{phased, sec, esm, sim.Phased} {
+				slices.Sort(l)
+			}
+			for _, c := range []struct {
+				what      string
+				got, want []string
+			}{{"phased", phased, tc.phased}, {"Simulation.Phased", sim.Phased, tc.phased}, {"security", sec, tc.security}, {"esm", esm, tc.esm}} {
+				if !slices.Equal(c.got, c.want) {
+					t.Errorf("%s = %v, want %v", c.what, c.got, c.want)
+				}
+			}
+		})
 	}
 }
 
@@ -152,21 +208,54 @@ func TestNewestKernel(t *testing.T) {
 	if got := NewestKernel(pkgs, "6.8.0-1-lowlatency"); got != "6.8.0-100-lowlatency" {
 		t.Errorf("NewestKernel lowlatency = %q", got)
 	}
+
+	pkgs = []Package{
+		{Name: "linux-image-6.8.0-91-generic", Version: "6.8.0-91.92"},
+		{Name: "linux-image-6.8.0-90-generic-64k", Version: "6.8.0-90.91"},
+		{Name: "linux-image-6.1.0-40-amd64", Version: "6.1.153-1"},
+		{Name: "linux-image-6.1.0-41-cloud-amd64", Version: "6.1.158-1"},
+		{Name: "linux-image-6.1.0-42-amd64-unsigned", Version: "6.1.159-1"},
+		{Name: "linux-image-6.12.43+deb13-amd64", Version: "6.12.43-1"},
+		{Name: "linux-image-6.12.48+deb13-amd64", Version: "6.12.48-1"},
+		{Name: "linux-image-amd64", Version: "6.12.48-1"},
+	}
+	for _, tc := range []struct{ running, want string }{
+		{"6.8.0-88-generic", "6.8.0-91-generic"},
+		{"6.8.0-88-generic-64k", "6.8.0-90-generic-64k"},
+		{"6.1.0-40-cloud-amd64", "6.1.0-41-cloud-amd64"},
+		{"6.12.43+deb13-amd64", "6.12.48+deb13-amd64"},
+		{"6.8.0-1012-aws", ""},
+	} {
+		if got := NewestKernel(pkgs, tc.running); got != tc.want {
+			t.Errorf("NewestKernel(%q) = %q, want %q", tc.running, got, tc.want)
+		}
+	}
 }
 
 func TestParseOSRelease(t *testing.T) {
-	o, err := ParseOSRelease(strings.NewReader("PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nID=ubuntu\nVERSION_ID=\"24.04\"\nUBUNTU_CODENAME=noble\n"))
-	if err != nil {
-		t.Fatal(err)
+	for _, tc := range []struct {
+		in   string
+		want OSRelease
+	}{
+		{"PRETTY_NAME=\"Ubuntu 22.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"22.04\"\nVERSION_CODENAME=jammy\nID=ubuntu\nID_LIKE=debian\nUBUNTU_CODENAME=jammy\n",
+			OSRelease{ID: "ubuntu", VersionID: "22.04", Codename: "jammy", PrettyName: "Ubuntu 22.04.5 LTS"}},
+		{"PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nID=ubuntu\nVERSION_ID=\"24.04\"\nUBUNTU_CODENAME=noble\n",
+			OSRelease{ID: "ubuntu", VersionID: "24.04", Codename: "noble", PrettyName: "Ubuntu 24.04.5 LTS"}},
+		{"PRETTY_NAME=\"Ubuntu 26.04 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"26.04\"\nVERSION_CODENAME=resolute\nID=ubuntu\nID_LIKE=debian\nUBUNTU_CODENAME=resolute\n",
+			OSRelease{ID: "ubuntu", VersionID: "26.04", Codename: "resolute", PrettyName: "Ubuntu 26.04 LTS"}},
+		{"PRETTY_NAME=\"Debian GNU/Linux 12 (bookworm)\"\nNAME=\"Debian GNU/Linux\"\nVERSION_ID=\"12\"\nVERSION=\"12 (bookworm)\"\nVERSION_CODENAME=bookworm\nID=debian\n",
+			OSRelease{ID: "debian", VersionID: "12", Codename: "bookworm", PrettyName: "Debian GNU/Linux 12 (bookworm)"}},
+		{"PRETTY_NAME=\"Debian GNU/Linux 13 (trixie)\"\nNAME=\"Debian GNU/Linux\"\nVERSION_ID=\"13\"\nVERSION=\"13 (trixie)\"\nVERSION_CODENAME=trixie\nID=debian\n",
+			OSRelease{ID: "debian", VersionID: "13", Codename: "trixie", PrettyName: "Debian GNU/Linux 13 (trixie)"}},
+	} {
+		o, err := ParseOSRelease(strings.NewReader(tc.in))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if o != tc.want {
+			t.Errorf("got %+v, want %+v", o, tc.want)
+		}
 	}
-	if o != (OSRelease{ID: "ubuntu", VersionID: "24.04", Codename: "noble", PrettyName: "Ubuntu 24.04.5 LTS"}) {
-		t.Errorf("got %+v", o)
-	}
-}
-
-func date(s string) time.Time {
-	t, _ := time.Parse("2006-01-02", s)
-	return t
 }
 
 func TestParseAptCacheShow(t *testing.T) {
@@ -196,4 +285,9 @@ Version: 2.0-1
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, want %v", got, want)
 	}
+}
+
+func date(s string) time.Time {
+	t, _ := time.Parse("2006-01-02", s)
+	return t
 }

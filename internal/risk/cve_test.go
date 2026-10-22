@@ -132,6 +132,11 @@ func TestOtherKernels(t *testing.T) {
 		pk("linux-image-6.1.0-18-amd64", "linux-signed-amd64"),
 		pk("linux-libc-dev", "linux"),
 	}
+	trixie := []collect.Package{
+		pk("linux-image-6.12.43+deb13-amd64", "linux-signed-amd64"),
+		pk("linux-image-6.12.48+deb13-amd64", "linux-signed-amd64"),
+		pk("linux-libc-dev", "linux"),
+	}
 	for _, tc := range []struct {
 		name            string
 		pkgs            []collect.Package
@@ -141,6 +146,7 @@ func TestOtherKernels(t *testing.T) {
 		{"ubuntu", ubuntu, "7.0.0-38-generic", "", []string{"linux", "linux-hwe-6.17", "linux-signed-hwe-6.17", "linux-signed-hwe-7.0"}},
 		{"ubuntu newest", ubuntu, "6.17.0-40-generic", "7.0.0-38-generic", []string{"linux", "linux-hwe-6.17", "linux-signed-hwe-6.17", "linux-signed-hwe-7.0"}},
 		{"debian", debian, "6.1.0-18-amd64", "", []string{"linux-signed-amd64"}},
+		{"debian 13", trixie, "6.12.43+deb13-amd64", "6.12.48+deb13-amd64", []string{"linux-signed-amd64"}},
 		{"unknown kernel", ubuntu, "5.0.0-1-generic", "", nil},
 	} {
 		inv := &collect.Inventory{Packages: tc.pkgs, Simulation: &collect.Simulation{}}

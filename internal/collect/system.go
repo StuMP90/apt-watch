@@ -177,17 +177,18 @@ func ReadReboot(path string) (Reboot, error) {
 
 // NewestKernel returns the release string (e.g. "6.8.0-91-generic") of the
 // highest-versioned installed linux-image package with the same flavour
-// as running.
+// as running. Ubuntu's unsigned images are named linux-image-unsigned-REL
+// and Debian's linux-image-REL-unsigned.
 func NewestKernel(pkgs []Package, running string) string {
-	flavour := running[strings.LastIndexByte(running, '-')+1:]
+	flavour := kernelFlavour(running)
 	var best, bestVer string
 	for _, p := range pkgs {
 		rel, ok := strings.CutPrefix(p.Name, "linux-image-")
 		if !ok {
 			continue
 		}
-		rel = strings.TrimPrefix(rel, "unsigned-")
-		if rel == "" || rel[0] < '0' || rel[0] > '9' || !strings.HasSuffix(rel, "-"+flavour) {
+		rel = strings.TrimSuffix(strings.TrimPrefix(rel, "unsigned-"), "-unsigned")
+		if rel == "" || rel[0] < '0' || rel[0] > '9' || kernelFlavour(rel) != flavour {
 			continue
 		}
 		if best == "" || debver.Compare(p.Version, bestVer) > 0 {
@@ -195,6 +196,20 @@ func NewestKernel(pkgs []Package, running string) string {
 		}
 	}
 	return best
+}
+
+// kernelFlavour returns the part of a kernel release after its version
+// and ABI: "generic" for 6.8.0-91-generic, "generic-64k" for
+// 6.8.0-91-generic-64k, "cloud-amd64" for 6.1.0-41-cloud-amd64 and "amd64"
+// for 6.12.48+deb13-amd64.
+func kernelFlavour(rel string) string {
+	parts := strings.Split(rel, "-")
+	for i := 1; i < len(parts); i++ {
+		if parts[i] != "" && (parts[i][0] < '0' || parts[i][0] > '9') {
+			return strings.Join(parts[i:], "-")
+		}
+	}
+	return ""
 }
 
 // RunningKernel returns the kernel release, as uname -r prints it.
