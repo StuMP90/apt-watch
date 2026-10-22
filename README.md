@@ -46,6 +46,8 @@ The full design is in [SPEC.md](SPEC.md).
 
 So far aptwatch has been run on real hosts with Debian 13 (trixie) and Ubuntu 24.04 LTS with Ubuntu Pro only. The other releases are covered by unit tests on synthetic apt output in their apt versions' formats, not yet by real-host runs.
 
+If aptwatch misses updates or CVEs on your system, or gets something else wrong, please [raise an issue](https://github.com/StuMP90/apt-watch/issues). Include the release, the apt version, and the output of `apt list --upgradable` or `pro security-status`.
+
 Hosts need outbound HTTPS access to the vulnerability data sources and to their apt mirrors.
 
 ## Building
@@ -502,6 +504,29 @@ The tests use only synthetic fixtures in `testdata/`. Don't copy a real `/var/li
 ```sh
 gofmt -l . && go vet ./... && go test ./...
 ```
+
+### Test coverage
+
+About 75% of statements are covered by the unit tests. To measure it:
+
+```sh
+go test -coverpkg=./... -coverprofile=cover.out ./... && go tool cover -func=cover.out | tail -1
+```
+
+Well covered:
+
+- Debian version comparison, using Debian's own test vectors.
+- The `dpkg/status` and `apt-get -s` parsers, on synthetic output in the format of each supported release's apt version (2.4 to 3.1): phased updates, origins, ESM and kernel package names.
+- CVE matching and statuses, ignore rules, third-party repositories, and the state file's history.
+- The text, HTML and JSON reports, with golden files.
+- The system rules (reboot required, newer kernel not running, end of life, stale apt lists) and the escalation of security updates after `policy.escalate_after`.
+- Exit codes and the Nagios line.
+
+Not covered by automated tests:
+
+- The end-to-end path: running apt-get, downloading the vulnerability feeds and putting the pieces together. The functions that read the system files are tested on temporary files. The `run`, `scan`, `cve`, `db` and `config` commands are covered by runs on real hosts instead (see [Supported systems](#supported-systems)). On Ubuntu 24.04 with Ubuntu Pro, aptwatch found the same pending security updates, at the same versions, as `pro security-status`.
+
+aptwatch reads the output of `apt-get -s`, which apt doesn't promise to keep stable, as well as the Ubuntu and Debian vulnerability feeds. A change to any of these formats in a later release could stop updates or CVEs being recognised. After a major apt upgrade, compare a report with `apt list --upgradable`, or with `pro security-status` on Ubuntu.
 
 The code is laid out like this:
 

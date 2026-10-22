@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"reflect"
 	"strings"
 	"sync/atomic"
@@ -312,5 +313,38 @@ func TestStatus(t *testing.T) {
 	}
 	if s := st[2]; s.Name != epssFeed.Name || s.Cached || s.Error != "" {
 		t.Errorf("epss: %+v", s)
+	}
+}
+
+func TestParseOSVTarXZ(t *testing.T) {
+	xz, err := exec.LookPath("xz")
+	if err != nil {
+		t.Skip("xz not installed")
+	}
+	compress := func(b []byte) []byte {
+		cmd := exec.Command(xz, "-c")
+		cmd.Stdin = bytes.NewReader(b)
+		out, err := cmd.Output()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	tb := osvTar(t, map[string]string{
+		"osv/cve/2024/UBUNTU-CVE-2024-0001.json": `{"id":"UBUNTU-CVE-2024-0001","upstream":["CVE-2024-0001"],"severity":[{"type":"Ubuntu","score":"high"}],
+			"affected":[{"package":{"ecosystem":"Ubuntu:24.04:LTS","name":"foo"},"ranges":[{"events":[{"introduced":"0"},{"fixed":"1.0-2"}]}]}]}`,
+	})
+	got, err := parseOSVTarXZ(context.Background(), bytes.NewReader(compress(tb)), "24.04")
+	want := map[string][]Advisory{"foo": {{CVE: "CVE-2024-0001", Fixed: "1.0-2", Priority: "high"}}}
+	if err != nil || !reflect.DeepEqual(got, want) {
+		t.Errorf("got %+v, %v\nwant %+v", got, err, want)
+	}
+
+	if _, err := parseOSVTarXZ(context.Background(), bytes.NewReader(tb), "24.04"); err == nil || !strings.HasPrefix(err.Error(), "xz: ") {
+		t.Errorf("not xz: %v, want an xz error", err)
+	}
+	bad := osvTar(t, map[string]string{"osv/cve/2024/UBUNTU-CVE-2024-0002.json": `{"id": "Ubuntu:24.04`})
+	if _, err := parseOSVTarXZ(context.Background(), bytes.NewReader(compress(bad)), "24.04"); err == nil || !strings.HasPrefix(err.Error(), "osv tarball: ") {
+		t.Errorf("bad record: %v, want a parse error", err)
 	}
 }

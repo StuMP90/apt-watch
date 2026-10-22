@@ -542,7 +542,7 @@ testdata/               dpkg status files, apt-get -s outputs, vuln data fixture
 
 ## 13. Testing
 
-- **Unit tests**: `debver` with Debian's own comparison test vectors; parsers fed synthetic `dpkg/status` and `apt-get -s` outputs in the format each supported release's apt version prints (2.4 on Ubuntu 22.04, 2.6 on Debian 12, 2.8 on Ubuntu 24.04, 3.0 on Debian 13, 3.1 on Ubuntu 26.04), including phased updates, Debian and Ubuntu origin labels, ESM and each release's kernel package names; matching truth tables; risk escalation; state diffing.
+- **Unit tests**: `debver` with Debian's own comparison test vectors; parsers fed synthetic `dpkg/status` and `apt-get -s` outputs in the format each supported release's apt version prints (2.4 on Ubuntu 22.04, 2.6 on Debian 12, 2.8 on Ubuntu 24.04, 3.0 on Debian 13, 3.1 on Ubuntu 26.04), including phased updates, Debian and Ubuntu origin labels, ESM and each release's kernel package names; matching truth tables; the system rules (reboot, kernel, end of life, stale lists) and risk escalation; state diffing.
 - **Golden-file tests** for each report format.
 - **`aptwatch cve`**: every status, the fix command, kernels and reboots, and the formats, on synthetic packages and advisories (never a real host's package list). First-seen dates: seeding, later dating, reseeding and the KEV fallback.
 - **Report tests**: every format carries the same sections; hostile package text is escaped in HTML.

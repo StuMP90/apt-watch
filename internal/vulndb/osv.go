@@ -56,6 +56,11 @@ func parseOSVTarXZ(ctx context.Context, r io.Reader, release string) (map[string
 	}
 	werr := cmd.Wait()
 	if perr != nil {
+		// A parse error from truncated output hides xz's own complaint,
+		// such as a download that isn't xz at all.
+		if msg := strings.TrimSpace(stderr.String()); msg != "" {
+			return nil, fmt.Errorf("xz: %s", msg)
+		}
 		return nil, perr
 	}
 	if werr != nil {
