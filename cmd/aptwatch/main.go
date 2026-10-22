@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -212,16 +213,16 @@ func refresh(ctx context.Context, cfg *config.Config) {
 	}
 }
 
-func printReport(rep *report.Report, format string) error {
+func printReport(w io.Writer, rep *report.Report, format string) error {
 	switch format {
 	case "nagios":
 		return nil
 	case "json":
-		return rep.JSON(os.Stdout)
+		return rep.JSON(w)
 	case "html":
-		return rep.HTML(os.Stdout)
+		return rep.HTML(w)
 	}
-	return rep.Text(os.Stdout)
+	return rep.Text(w)
 }
 
 // reportFormat is "nagios" with --nagios, else the --format flag if
@@ -240,9 +241,9 @@ func reportFormat(cmd *cobra.Command, cfg *config.Config) (string, error) {
 	return f, nil
 }
 
-func exitFor(cfg *config.Config, rep *report.Report) error {
+func exitFor(w io.Writer, cfg *config.Config, rep *report.Report) error {
 	if g.nagios {
-		return nagios(cfg, rep)
+		return nagios(w, cfg, rep)
 	}
 	switch {
 	case rep.Highest() >= cfg.Policy.ExitThreshold && len(risk.Active(rep.Findings)) > 0:
@@ -263,7 +264,7 @@ const (
 // nagios prints the report as a monitoring plugin's one line (SPEC §3):
 // CRITICAL for findings at or above policy.exit_threshold, WARNING for
 // lesser risks or warnings, else OK. Fatal errors are UNKNOWN (main).
-func nagios(cfg *config.Config, rep *report.Report) error {
+func nagios(w io.Writer, cfg *config.Config, rep *report.Report) error {
 	active := len(risk.Active(rep.Findings)) > 0
 	status, code := "OK", nagiosOK
 	switch hi := rep.Highest(); {
@@ -276,7 +277,7 @@ func nagios(cfg *config.Config, rep *report.Report) error {
 	if n := len(rep.Warnings); n > 0 {
 		line += fmt.Sprintf(" — %d warning%s: %s", n, plural(n), rep.Warnings[0])
 	}
-	fmt.Println(line)
+	fmt.Fprintln(w, line)
 	if code == nagiosOK {
 		return nil
 	}
@@ -325,7 +326,7 @@ func runCmd() *cobra.Command {
 			}
 			diff := st.Update(fs, now, cfg.State.KeepResolved.D())
 			rep.Diff = &diff
-			if err := printReport(rep, format); err != nil {
+			if err := printReport(cmd.OutOrStdout(), rep, format); err != nil {
 				return err
 			}
 			if !dryRun {
@@ -333,7 +334,7 @@ func runCmd() *cobra.Command {
 					return fmt.Errorf("saving state: %w", err)
 				}
 			}
-			return exitFor(cfg, rep)
+			return exitFor(cmd.OutOrStdout(), cfg, rep)
 		},
 	}
 	f := cmd.Flags()
@@ -366,10 +367,10 @@ func scanCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := printReport(rep, format); err != nil {
+			if err := printReport(cmd.OutOrStdout(), rep, format); err != nil {
 				return err
 			}
-			return exitFor(cfg, rep)
+			return exitFor(cmd.OutOrStdout(), cfg, rep)
 		},
 	}
 	cmd.Flags().String("format", "", "report format: text, html or json (default: report.format in the config, else text)")
