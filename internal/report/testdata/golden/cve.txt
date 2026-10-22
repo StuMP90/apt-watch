@@ -1,0 +1,87 @@
+web01: 11 CVEs checked — 1 UNREACHABLE, 1 NEEDS PRO, 1 FIX PENDING, 1 REBOOT PENDING, 1 NO FIX YET, 1 UNCONFIRMED, 2 UNKNOWN, 1 FIXED, 2 NOT AFFECTED
+==============================================================================
+
+CVE-2026-20001  UNREACHABLE
+  priority high
+  Heap overflow in the example parser.
+  https://ubuntu.com/security/CVE-2026-20001
+
+  Source   Installed  Fixed in  Status       Repository
+  example  1.2-1      1.2-2     UNREACHABLE  noble-proposed
+  example: the fix is only in a suite apt doesn't use
+
+CVE-2026-20002  NEEDS PRO
+  priority medium · published 2026-09-12
+  https://ubuntu.com/security/CVE-2026-20002
+
+  Source    Installed  Fixed in             Status     Repository
+  imagelib  0.9-3      0.9-3ubuntu0.1~esm1  NEEDS PRO  esm-apps
+  imagelib: fixed in Ubuntu Pro (esm-apps)
+    sudo pro attach
+
+CVE-2026-20003  FIX PENDING
+  priority high · published 2026-10-10 · ★ known exploited (CISA KEV) since 2026-10-17 · EPSS 87%
+  Authentication bypass in the <admin> interface & API.
+  https://ubuntu.com/security/CVE-2026-20003
+
+  Source          Installed                              Fixed in           Status       Repository
+  openssl         3.0.13-0ubuntu3.5 → 3.0.13-0ubuntu3.6  3.0.13-0ubuntu3.6  FIX PENDING  noble-security
+  openssl-compat  1.1-2ubuntu1                           1.1-2ubuntu1       FIXED        noble-updates
+  openssl:
+    sudo apt-get install --only-upgrade libssl3t64 openssl
+  Also affects, not installed: openssl1.0, edk2
+
+CVE-2026-20004  REBOOT PENDING
+  priority medium
+  https://ubuntu.com/security/CVE-2026-20004
+
+  Source  Installed    Fixed in     Status          Repository
+  linux   6.8.0-91.91  6.8.0-91.91  REBOOT PENDING  noble-security
+  linux: running kernel 6.8.0-90-generic is older than the fix
+    sudo reboot
+
+CVE-2026-20005  NO FIX YET
+  priority low
+  https://ubuntu.com/security/CVE-2026-20005
+
+  Source  Installed              Fixed in  Status      Repository
+  zlib    1:1.3.dfsg-3.1ubuntu2  -         NO FIX YET  -
+
+CVE-2026-20006  UNCONFIRMED
+  priority medium
+
+  Source       Installed               Fixed in  Status       Repository
+  example-php  8.3.12-1+ubuntu24.04.1  -         UNCONFIRMED  ppa:example/php
+  example-php: fixed by Ubuntu in 8.3.6-0ubuntu0.24.04.3; the third-party changelog doesn't name it
+
+CVE-2026-20007  UNKNOWN
+  Not in the vulnerability data for this release, nor in any third-party changelog read: check the ID, or it may be too new, rejected, or not affect this distribution.
+
+CVE-2026-20008  UNKNOWN
+  Can't tell for some of the affected packages.
+
+  Source     Installed  Fixed in  Status   Repository
+  localtool  0.1        -         UNKNOWN  local
+  localtool: not from a known archive
+
+CVE-2026-20009  FIXED
+  priority high · published 2026-07-24
+  https://ubuntu.com/security/CVE-2026-20009
+  Fixed in every affected installed package.
+
+  Source  Installed                  Fixed in                   Status  Repository
+  sudo    1.9.15p5-3ubuntu5.24.04.1  1.9.15p5-3ubuntu5.24.04.1  FIXED   noble-security
+
+CVE-2026-20010  NOT AFFECTED
+  priority medium
+  https://ubuntu.com/security/CVE-2026-20010
+  None of the affected packages is installed.
+  Also affects, not installed: nginx
+
+CVE-2026-20011  NOT AFFECTED
+  The vulnerability data doesn't list it for this release.
+
+Vulnerability data: ubuntu-cve-tracker, updated 5h ago (+KEV, EPSS)
+
+Warnings
+  ! kev: catalogue is 3 days old

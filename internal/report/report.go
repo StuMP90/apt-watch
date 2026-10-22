@@ -176,7 +176,11 @@ func (r *Report) Text(w io.Writer) error {
 		p("  %s (%d)\n", g.Label, len(g.Updates))
 		tw := tabwriter.NewWriter(b, 0, 0, 2, ' ', 0)
 		for _, u := range g.Updates {
-			fmt.Fprintf(tw, "    %s\t%s → %s\t%s\t%s\n", u.Package, installedOrNew(u), u.Candidate, suite(u), strings.Join(updateFlags(u), ","))
+			fmt.Fprintf(tw, "    %s\t%s → %s\t%s", u.Package, installedOrNew(u), u.Candidate, suite(u))
+			if fl := updateFlags(u); len(fl) > 0 {
+				fmt.Fprintf(tw, "\t%s", strings.Join(fl, ","))
+			}
+			fmt.Fprintln(tw)
 		}
 		tw.Flush()
 	}

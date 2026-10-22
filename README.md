@@ -1,6 +1,11 @@
 # aptwatch
 
-aptwatch checks a Debian or Ubuntu server for security updates it hasn't installed yet, and for CVEs that affect its installed packages. It is a single static Go binary. You run it once a day as root, usually from cron, and it writes a report to stdout as text, HTML or JSON. What happens to the report next is up to you: cron can mail it, you can redirect it to a file, or you can pipe it to a handler.
+aptwatch checks a Debian or Ubuntu server for security updates it hasn't installed yet, and for CVEs that affect its installed packages. It is a single static Go binary that writes its report to stdout as text, HTML or JSON.
+
+You can use it in two ways:
+
+- **Daily report.** Run it once a day as root, usually from cron. What happens to the report next is up to you: cron can mail it, you can redirect it to a file, or you can pipe it to a handler.
+- **On-demand CVE check.** When a CVE is in the news, `aptwatch cve CVE-ID...` tells you straight away whether this host is affected and, if it is, what to do (see [Checking specific CVEs](#checking-specific-cves)).
 
 It answers three questions:
 

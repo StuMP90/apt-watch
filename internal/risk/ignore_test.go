@@ -1,6 +1,7 @@
 package risk
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 )
@@ -46,5 +47,30 @@ func TestApplyIgnores(t *testing.T) {
 	// The last day still applies.
 	if (IgnoreRule{Until: day("2026-10-22")}).Expired(now) {
 		t.Error("expired on its last day")
+	}
+}
+
+func TestDateJSON(t *testing.T) {
+	var d Date
+	if err := d.UnmarshalText([]byte("2026-10-01")); err != nil {
+		t.Fatal(err)
+	}
+	b, err := json.Marshal(IgnoreRule{CVE: "CVE-2026-1", Reason: "r", Until: d})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := `{"cve":"CVE-2026-1","reason":"r","until":"2026-10-01"}`; string(b) != want {
+		t.Errorf("got %s, want %s", b, want)
+	}
+	var r IgnoreRule
+	if err := json.Unmarshal(b, &r); err != nil {
+		t.Fatal(err)
+	}
+	if !r.Until.Equal(d.Time) {
+		t.Errorf("round trip: got %v, want %v", r.Until, d)
+	}
+	b, _ = json.Marshal(IgnoreRule{CVE: "CVE-2026-1", Reason: "r"})
+	if want := `{"cve":"CVE-2026-1","reason":"r"}`; string(b) != want {
+		t.Errorf("zero date: got %s, want %s", b, want)
 	}
 }

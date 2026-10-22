@@ -79,7 +79,7 @@ func TestFormats(t *testing.T) {
 
 func TestSuppressed(t *testing.T) {
 	r := sample()
-	r.Findings[0].Suppressed = &risk.Suppression{Rule: "CVE-1", Reason: "not exposed", Until: time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)}
+	r.Findings[0].Suppressed = &risk.Suppression{Rule: "CVE-1", Reason: "not exposed", Until: risk.Date{Time: time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)}}
 	var until risk.Date
 	_ = until.UnmarshalText([]byte("2026-10-01"))
 	r.Expired = []risk.IgnoreRule{{CVE: "CVE-9", Reason: "old reason", Until: until}}

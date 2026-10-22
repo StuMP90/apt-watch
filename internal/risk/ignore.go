@@ -1,6 +1,7 @@
 package risk
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"path"
@@ -30,6 +31,18 @@ func (d *Date) UnmarshalText(b []byte) error {
 
 func (d Date) MarshalText() ([]byte, error) { return []byte(d.Format(time.DateOnly)), nil }
 
+// MarshalJSON and UnmarshalJSON override the time.Time methods Date would
+// otherwise promote, which take precedence over the text ones.
+func (d Date) MarshalJSON() ([]byte, error) { return json.Marshal(d.Format(time.DateOnly)) }
+
+func (d *Date) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	return d.UnmarshalText([]byte(s))
+}
+
 // IgnoreRule suppresses the findings it matches (SPEC §7.3): those that
 // name the CVE, and whose source package or any package matches the glob,
 // and whose kind is in Kinds. Unset fields match anything, but a rule needs
@@ -44,9 +57,9 @@ type IgnoreRule struct {
 
 // Suppression records the ignore rule that matched a finding.
 type Suppression struct {
-	Rule   string    `json:"rule"`
-	Reason string    `json:"reason"`
-	Until  time.Time `json:"until,omitzero"`
+	Rule   string `json:"rule"`
+	Reason string `json:"reason"`
+	Until  Date   `json:"until,omitzero"`
 }
 
 // String describes the rule, e.g. "CVE-2025-1234 (security-update-pending)".
@@ -153,8 +166,8 @@ func ApplyIgnores(fs []Finding, rules []IgnoreRule, now time.Time) (expired []Ig
 		for _, r := range by {
 			rs = append(rs, r.String())
 			why = append(why, r.Reason)
-			if !r.Until.IsZero() && (s.Until.IsZero() || r.Until.Before(s.Until)) {
-				s.Until = r.Until.Time
+			if !r.Until.IsZero() && (s.Until.IsZero() || r.Until.Before(s.Until.Time)) {
+				s.Until = r.Until
 			}
 		}
 		s.Rule, s.Reason = strings.Join(rs, "; "), strings.Join(slices.Compact(why), "; ")

@@ -1,0 +1,335 @@
+{
+  "schema": 1,
+  "tool": "aptwatch test",
+  "host": "web01",
+  "generated": "2026-10-22T06:00:00Z",
+  "system": {
+    "hostname": "web01",
+    "os": {
+      "id": "ubuntu",
+      "version_id": "24.04",
+      "codename": "noble",
+      "pretty_name": "Ubuntu 24.04.3 LTS"
+    },
+    "eol": {
+      "security_end": "2029-05-31T00:00:00Z",
+      "extended_end": "2034-04-30T00:00:00Z",
+      "note": "ESM with Ubuntu Pro until 2034-04-30"
+    },
+    "reboot": {
+      "required": true,
+      "since": "2026-10-19T06:00:00Z",
+      "packages": [
+        "linux-image-6.8.0-91-generic",
+        "libc6"
+      ]
+    },
+    "kernel": {
+      "running": "6.8.0-90-generic",
+      "newest": "6.8.0-91-generic"
+    },
+    "apt_lists_updated": "2026-10-18T06:00:00Z"
+  },
+  "findings": [
+    {
+      "key": "cve:CVE-2026-10001:openssl",
+      "kind": "cve-fix-available",
+      "severity": "critical",
+      "title": "CVE-2026-10001 in openssl: fix available",
+      "source": "openssl",
+      "packages": [
+        {
+          "name": "libssl3t64",
+          "installed": "3.0.13-0ubuntu3.5"
+        },
+        {
+          "name": "openssl",
+          "installed": "3.0.13-0ubuntu3.5"
+        }
+      ],
+      "cves": [
+        {
+          "id": "CVE-2026-10001",
+          "priority": "high",
+          "fixed": "3.0.13-0ubuntu3.6",
+          "kev": true,
+          "epss": 0.42,
+          "url": "https://ubuntu.com/security/CVE-2026-10001"
+        }
+      ],
+      "fix_available": true,
+      "since": "2026-10-13T06:00:00Z",
+      "first_seen": "2026-10-13T06:00:00Z",
+      "detail": "Remote code execution in the TLS handshake \u003cand\u003e heap overflow."
+    },
+    {
+      "key": "cve:CVE-2026-10002:example",
+      "kind": "cve-fix-available",
+      "severity": "high",
+      "title": "2 CVEs in example: fix available",
+      "source": "example",
+      "packages": [
+        {
+          "name": "libexample1",
+          "installed": "2.4.1-1ubuntu0.1"
+        },
+        {
+          "name": "libexample-dev",
+          "installed": "2.4.1-1ubuntu0.1"
+        },
+        {
+          "name": "libexample-doc",
+          "installed": "2.4.1-1ubuntu0.1"
+        },
+        {
+          "name": "libexample-tools",
+          "installed": "2.4.1-1ubuntu0.1"
+        },
+        {
+          "name": "libexample-utils",
+          "installed": "2.4.1-1ubuntu0.1"
+        },
+        {
+          "name": "python3-example",
+          "installed": "2.4.1-1ubuntu0.1"
+        },
+        {
+          "name": "example-bin",
+          "installed": "2.4.1-1ubuntu0.1"
+        },
+        {
+          "name": "example-common",
+          "installed": "2.4.1-1ubuntu0.1"
+        },
+        {
+          "name": "example-data",
+          "installed": "2.4.1-1ubuntu0.1"
+        },
+        {
+          "name": "example-l10n",
+          "installed": "2.4.1-1ubuntu0.1"
+        }
+      ],
+      "cves": [
+        {
+          "id": "CVE-2026-10002",
+          "priority": "medium",
+          "epss": 0.12,
+          "url": "https://ubuntu.com/security/CVE-2026-10002"
+        },
+        {
+          "id": "CVE-2026-10003",
+          "priority": "low"
+        }
+      ],
+      "fix_available": true,
+      "since": "2026-10-20T06:00:00Z"
+    },
+    {
+      "key": "reboot-required",
+      "kind": "reboot-required",
+      "severity": "medium",
+      "title": "Reboot required",
+      "fix_available": false,
+      "since": "2026-10-19T06:00:00Z"
+    },
+    {
+      "key": "stale-apt-lists",
+      "kind": "stale-apt-lists",
+      "severity": "medium",
+      "title": "apt lists last updated 4 days ago",
+      "fix_available": false,
+      "since": "2026-10-18T06:00:00Z",
+      "detail": "Run apt-get update, or check the apt-daily timer."
+    },
+    {
+      "key": "cve-unfixed:CVE-2026-10004:zlib",
+      "kind": "cve-unfixed",
+      "severity": "low",
+      "title": "CVE-2026-10004 in zlib: no fix yet",
+      "source": "zlib",
+      "cves": [
+        {
+          "id": "CVE-2026-10004",
+          "priority": "low"
+        }
+      ],
+      "fix_available": false,
+      "first_seen": "2026-09-22T06:00:00Z"
+    },
+    {
+      "key": "cve-unfixed-summary",
+      "kind": "cve-unfixed-summary",
+      "severity": "info",
+      "title": "14 CVEs with no fix yet affect 6 installed source packages",
+      "fix_available": false,
+      "detail": "zlib (5), example (4), imagelib (2), and 3 more"
+    },
+    {
+      "key": "changelog-cves:example-php",
+      "kind": "cve-fixed-third-party",
+      "severity": "info",
+      "title": "example-php 8.3.12 fixes 2 recent CVEs",
+      "cves": [
+        {
+          "id": "CVE-2026-10005",
+          "priority": "critical",
+          "kev": true,
+          "url": "https://ubuntu.com/security/CVE-2026-10005"
+        },
+        {
+          "id": "CVE-2026-10006"
+        }
+      ],
+      "fix_available": false
+    },
+    {
+      "key": "cve:CVE-2026-10007:curl",
+      "kind": "cve-fix-available",
+      "severity": "high",
+      "title": "CVE-2026-10007 in curl: fix available",
+      "source": "curl",
+      "fix_available": true,
+      "suppressed": {
+        "rule": "CVE-2026-10007",
+        "reason": "not reachable from our services",
+        "until": "2026-12-31"
+      }
+    },
+    {
+      "key": "update:vim",
+      "kind": "update-pending",
+      "severity": "low",
+      "title": "vim: update pending",
+      "fix_available": false,
+      "suppressed": {
+        "rule": "package vim* (update-pending)",
+        "reason": "pinned"
+      }
+    }
+  ],
+  "diff": {
+    "new": [
+      "cve:CVE-2026-10002:example"
+    ],
+    "escalated": [
+      "cve:CVE-2026-10001:openssl"
+    ],
+    "resolved": [
+      {
+        "key": "cve:CVE-2026-09999:sudo",
+        "kind": "cve-fix-available",
+        "title": "CVE-2026-09999 in sudo: fix available",
+        "severity": "high",
+        "first_seen": "2026-10-12T06:00:00Z",
+        "last_seen": "2026-10-21T06:00:00Z",
+        "resolved_at": "2026-10-22T06:00:00Z"
+      }
+    ],
+    "persisting": null
+  },
+  "updates": [
+    {
+      "package": "openssl",
+      "arch": "amd64",
+      "installed": "3.0.13-0ubuntu3.5",
+      "candidate": "3.0.13-0ubuntu3.6",
+      "source": "openssl",
+      "source_version": "3.0.13-0ubuntu3.6",
+      "origins": [
+        {
+          "origin": "Ubuntu",
+          "version": "24.04",
+          "suite": "noble-security"
+        }
+      ],
+      "security": true
+    },
+    {
+      "package": "libssl3t64",
+      "arch": "amd64",
+      "installed": "3.0.13-0ubuntu3.5",
+      "candidate": "3.0.13-0ubuntu3.6",
+      "source": "openssl",
+      "source_version": "3.0.13-0ubuntu3.6",
+      "origins": [
+        {
+          "origin": "Ubuntu",
+          "version": "24.04",
+          "suite": "noble-security"
+        }
+      ],
+      "security": true
+    },
+    {
+      "package": "python3-example",
+      "arch": "all",
+      "installed": "2.4.1-1ubuntu0.1",
+      "candidate": "2.4.1-1ubuntu0.1+esm1",
+      "source": "example",
+      "origins": [
+        {
+          "origin": "UbuntuESMApps",
+          "version": "24.04",
+          "suite": "noble-apps-security"
+        }
+      ],
+      "security": true,
+      "esm": true
+    },
+    {
+      "package": "tzdata",
+      "arch": "all",
+      "installed": "2026a-0ubuntu0.24.04",
+      "candidate": "2026b-0ubuntu0.24.04",
+      "origins": [
+        {
+          "origin": "Ubuntu",
+          "version": "24.04",
+          "suite": "noble-updates"
+        }
+      ],
+      "security": false,
+      "phased": true
+    },
+    {
+      "package": "linux-image-6.8.0-92-generic",
+      "arch": "amd64",
+      "candidate": "6.8.0-92.92",
+      "origins": [
+        {
+          "origin": "Ubuntu",
+          "version": "24.04",
+          "suite": "noble-updates"
+        }
+      ],
+      "security": false
+    }
+  ],
+  "vulndb": {
+    "sources": [
+      "ubuntu-cve-tracker"
+    ],
+    "fetched": "2026-10-22T01:00:00Z",
+    "kev": 1400,
+    "epss": 280000
+  },
+  "warnings": [
+    "epss: feed unavailable, using cached scores from 2026-10-20"
+  ],
+  "expired_ignores": [
+    {
+      "cve": "CVE-2026-09000",
+      "reason": "waiting for vendor",
+      "until": "2026-10-01"
+    },
+    {
+      "package": "nginx*",
+      "kinds": [
+        "update-pending"
+      ],
+      "reason": "held for testing",
+      "until": "2026-10-15"
+    }
+  ]
+}
