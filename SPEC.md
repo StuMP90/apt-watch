@@ -19,7 +19,6 @@ A single static Go binary, run daily as root (cron or systemd timer) on Debian a
 - Installing updates. `unattended-upgrades` already does that; this tool **reports**.
 - Delivering the report (email, chat, pop-ups, …). That is left to cron, a redirect or a pipe (§11.2).
 - RPM-based distros, containers/images, language package managers (pip, npm, …).
-- A central server for a fleet (designed for in §11, but not built in v1).
 
 ### Supported platforms
 
@@ -255,7 +254,7 @@ type Advisory struct {
 
 **Publish dates for Debian.** The Debian tracker gives no publish dates, so aptwatch records the day it first sees each CVE in the tracker data for the release, in `<cache_dir>/debian-<release>-seen.json`, and uses that as the date. CVEs already there on the first run are recorded without a date: they were published at some unknown time before, so none counts as recent (`policy.recent_cves`). Entries are kept when a CVE leaves the data, so one that comes back isn't dated again; a corrupt file, or one for another release, starts afresh. A CVE still without a date takes the date CISA added it to KEV, if it is there, since it was public by then at the latest. Ubuntu's OSV data has real publish dates and doesn't need this.
 
-Other sources (Ubuntu OVAL, OSV `querybatch` API, NVD for CVSS) can be added through the same interface later. NVD is left out of v1 because of its rate limits, and because the distro's own priority is more relevant to the packaged version than NVD's generic score.
+Other sources (Ubuntu OVAL, OSV `querybatch` API) can be added through the same interface later. NVD CVSS scores are not used: NVD rate-limits its API, and the distro's own priority is more relevant to the packaged version than NVD's generic score.
 
 ### 6.3 Caching and failure handling
 
@@ -415,7 +414,7 @@ Chosen with `--format`, or `report.format` in the config (default `text`). Every
 |---|---|
 | `text` (default) | Terminal and cron mail. Plain text, no colour codes. |
 | `html` | A single self-contained page: inline CSS (light and dark), no scripts, nothing fetched, untrusted text escaped by Go's `html/template`. Save it for a web server, or hand it to a mailer as an HTML body. |
-| `json` | Stable, versioned schema (`schema` field); for scripts, handlers and future fleet use. |
+| `json` | Stable, versioned schema (`schema` field); for scripts and handlers. |
 
 The first line of `text` output, and the `<title>`/`<h1>` of `html`, is the summary line, so a handler can use it as a subject.
 
@@ -477,7 +476,7 @@ report:
 
 ---
 
-## 11. Packaging, scheduling and future fleet support
+## 11. Packaging and scheduling
 
 ### 11.1 Build and packaging
 
@@ -499,15 +498,11 @@ MAILTO=ops@example.com
 # an HTML page for a web server (written atomically)
 25 6 * * * root /usr/sbin/aptwatch run --format html > /var/www/status/web01.html.tmp; mv /var/www/status/web01.html.tmp /var/www/status/web01.html
 
-# hand the JSON to any handler (mailer, chat bot, collector)
+# hand the JSON to any handler (mailer, chat bot)
 25 6 * * * root /usr/sbin/aptwatch run --format json | /usr/local/bin/report-handler
 ```
 
-- The run waits a random 0–`jitter` (default 0 for cron, systemd handles it) so a fleet doesn't hit the data sources at the same moment.
-
-### 11.3 Fleet (designed for, not in v1)
-
-The JSON report is the contract. Piping `--format json` to a small collector service (e.g. `| curl --data-binary @- https://collector/…`) enables central dashboards without changing the agent. A vuln data mirror (`vulndb.mirror_url`) isn't needed, since every host has internet access.
+- The run waits a random 0–`jitter` (default 0 for cron, systemd handles it) so many hosts don't hit the data sources at the same moment.
 
 ---
 
@@ -570,8 +565,8 @@ testdata/               dpkg status files, apt-get -s outputs, vuln data fixture
 - **`aptwatch cve`**: every status, the fix command, kernels and reboots, and the formats, on synthetic packages and advisories (never a real host's package list). First-seen dates: seeding, later dating, reseeding and the KEV fallback.
 - **Report tests**: every format carries the same sections; hostile package text is escaped in HTML.
 - **Integration tests**: run the binary in containers (`debian:12`, `debian:13`, `ubuntu:22.04`, `ubuntu:24.04`, `ubuntu:26.04`) with a deliberately old package pinned, and check that it reports the expected CVE and update.
-- **Ubuntu Pro**: run on at least one real Pro-attached host (Pro can't be attached inside a throwaway container without using a licence seat). Check that ESM updates and `fix requires Pro` findings are reported correctly. Captured outputs from that host become fixtures.
-- **Cross-check**: on Debian, compare results with `debsecan --suite <codename>`; on Ubuntu, compare with `pro security-status`. Investigate any differences.
+- **Ubuntu Pro**: run on a real Pro-attached host (Pro can't be attached inside a throwaway container without using a licence seat) and compare the pending security updates with `pro security-status`. ESM and `fix requires Pro` matching is covered by unit tests on synthetic advisories. Real-host output is never kept as fixtures. Done 2026-10-22 on Ubuntu 24.04 with esm-apps and esm-infra enabled: the same 11 security updates at the same versions.
+- **Debian**: checked by running reports on a real Debian host (done 2026-10-22). No `debsecan` comparison.
 
 ---
 
@@ -581,10 +576,9 @@ testdata/               dpkg status files, apt-get -s outputs, vuln data fixture
 |---|---|---|
 | **M0** | Repo, Go module, `debver` package, safe exec helper | `debver` passes the Debian test vectors |
 | **M1** | **End-to-end slice.** Collection (dpkg, apt simulation, reboot, kernel, EOL), basic findings and severities, state + diff, text report, `run` / `scan` commands | On the dev machine, `aptwatch run` lists pending security updates; a second run shows no new changes |
-| **M2** | Vuln data: spike to confirm source formats and sizes, then cache, Debian tracker, OSV Ubuntu (including `Ubuntu:Pro:*`), KEV, EPSS, matching | Results agree with `debsecan` / `pro security-status` on test hosts, including a Pro host |
+| **M2** | Vuln data: spike to confirm source formats and sizes, then cache, Debian tracker, OSV Ubuntu (including `Ubuntu:Pro:*`), KEV, EPSS, matching | Results agree with `pro security-status` on a Pro host; reports run on a Debian host (done) |
 | **M3** | Third-party repository detection and changelog CVEs (done), full risk engine (escalation, restarts via needrestart), ignore rules, exit codes | Golden tests pass |
 | **M4** | Report formats: `text`, `html`, `json` via `--format` / `report.format` (done; notifications removed) | `run --format html > page.html` gives a self-contained page; report tests pass |
 | **M4a** | `aptwatch cve` (§3.1) and Debian first-seen publish dates (§6.2) (done) | `aptwatch cve CVE-ID` gives the right status and exit code on the dev machine; unit tests pass |
 | **M4b** | Ignore rules (§7.3), `db update` / `db status`, `config check`, `--nagios` (done) | Unit tests pass; an ignore rule on the dev machine moves its finding to "Suppressed findings" |
 | **M5** | `.deb` packaging, cron/systemd units, man page, README, CI | Install from `.deb` on a clean VM, edit config, get a report on the next run |
-| **Later** | Fleet collector, NVD CVSS enrichment, Prometheus textfile output | — |

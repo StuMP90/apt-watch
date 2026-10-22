@@ -30,6 +30,7 @@ The full design is in [SPEC.md](SPEC.md).
 - [Files](#files)
 - [Development](#development)
 - [Not yet implemented](#not-yet-implemented)
+- [Licence](#licence)
 
 ## Supported systems
 
@@ -510,3 +511,7 @@ The code is laid out like this:
 These are in SPEC.md but not built yet:
 
 - **Packaging** (milestone M5): a `.deb`, systemd units and a man page. Until then, install by hand as described above.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).
