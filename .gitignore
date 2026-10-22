@@ -1,0 +1,11 @@
+# Built binary
+/aptwatch
+
+# Dev run state and downloaded vulnerability data
+/dev/state.json
+/dev/aptwatch.lock
+/dev/cache/
+
+# Reports from real hosts: they list installed packages and vulnerabilities
+*.html
+!testdata/**/*.html

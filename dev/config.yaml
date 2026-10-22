@@ -1,0 +1,9 @@
+# Development config for running aptwatch as a normal user on this machine.
+# Usage: aptwatch run --config dev/config.yaml
+lock_file: aptwatch.lock
+state:
+  file: state.json
+vulndb:
+  cache_dir: cache
+report:
+  format: text

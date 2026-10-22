@@ -1,0 +1,39 @@
+Package: libssl3t64
+Status: install ok installed
+Priority: optional
+Architecture: amd64
+Multi-Arch: same
+Source: openssl
+Version: 3.0.13-0ubuntu3.4
+Description: Secure Sockets Layer toolkit - shared libraries
+ This package is part of the OpenSSL project's implementation.
+ .
+ Continuation lines must be ignored.
+
+Package: openssl
+Status: install ok installed
+Architecture: amd64
+Version: 3.0.13-0ubuntu3.4
+
+Package: libglib2.0-0t64
+Status: install ok installed
+Architecture: amd64
+Source: glib2.0 (2.80.0-6ubuntu3.9)
+Version: 2.80.0-6ubuntu3.9
+
+Package: libc6
+Status: install ok installed
+Architecture: i386
+Source: glibc
+Version: 2.39-0ubuntu8.4
+
+Package: linux-image-6.8.0-90-generic
+Status: hold ok installed
+Architecture: amd64
+Source: linux-signed
+Version: 6.8.0-90.91
+
+Package: oldthing
+Status: deinstall ok config-files
+Architecture: amd64
+Version: 1.0-1
