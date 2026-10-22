@@ -1,6 +1,6 @@
 # aptwatch — Specification & Plan
 
-Status: **Draft v0.6** (2026-10-22): decisions from review recorded in [§12](#12-decisions-and-open-questions); v0.6 adds `aptwatch cve` (§3.1) and first-seen dates for Debian CVEs (§6.2).
+Status: **Draft v0.6** (2026-10-22): v0.6 adds `aptwatch cve` (§3.1) and first-seen dates for Debian CVEs (§6.2).
 
 ---
 
@@ -506,28 +506,7 @@ MAILTO=ops@example.com
 
 ---
 
-## 12. Decisions and open questions
-
-### Decided (2026-10-22)
-
-| Topic | Decision | Effect on the spec |
-|---|---|---|
-| Name | `aptwatch` | Avoids confusion with Ubuntu's `/usr/lib/update-notifier/apt-check`. |
-| Notifications | **Removed (2026-10-22).** aptwatch writes the report to stdout as `text` (default), `html` or `json`; cron mail, redirects or a separate handler deliver it. | §3, §9.2, §11.2. Supersedes the earlier email/desktop/chat targets and the notifier package. |
-| Build order | End-to-end slice first, tested on the development machine (Ubuntu 24.04 desktop) | M1 is a working slice that prints the report (§15). |
-| Ubuntu Pro | Some Ubuntu hosts are on Pro | ESM handling (§5.3, §5.4, §6.2 `Ubuntu:Pro:*` ecosystems, §6.4 "fix requires Pro") is **in v1**, with test coverage on a Pro host (§14). |
-| Releases | Debian 12/13, Ubuntu 22.04/24.04/26.04 | As in §1. |
-| Network | All hosts have internet access | No mirror or proxy support in v1. |
-| Checking one CVE | `aptwatch cve CVE-ID...` with its own statuses and exit codes | §3, §3.1. |
-| Debian publish dates | First-seen dates kept in the cache, falling back to KEV's date added | §6.2. The first run on a Debian host reports no third-party CVEs as recent. |
-
-### Still open
-
-None.
-
----
-
-## 13. Code layout
+## 12. Code layout
 
 ```
 cmd/aptwatch/           main.go, cobra commands
@@ -558,7 +537,7 @@ testdata/               dpkg status files, apt-get -s outputs, vuln data fixture
 
 ---
 
-## 14. Testing
+## 13. Testing
 
 - **Unit tests**: `debver` with Debian's own comparison test vectors; parsers fed real `dpkg/status` and `apt-get -s` outputs captured from every supported release; matching truth tables; risk escalation; state diffing.
 - **Golden-file tests** for each report format.
@@ -570,7 +549,7 @@ testdata/               dpkg status files, apt-get -s outputs, vuln data fixture
 
 ---
 
-## 15. Milestones
+## 14. Milestones
 
 | # | Deliverable | Done when |
 |---|---|---|

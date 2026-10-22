@@ -120,8 +120,8 @@ Here it checks two critical PHP CVEs on a Ubuntu 24.04 host that runs PHP from t
 
 ```console
 $ aptwatch cve CVE-2026-109618 cve-2026-109619
-worm25: 2 CVEs checked — 2 FIXED
-================================
+web01: 2 CVEs checked — 2 FIXED
+===============================
 
 CVE-2026-109618  FIXED
   priority critical · published 2026-10-21 · EPSS 5%
