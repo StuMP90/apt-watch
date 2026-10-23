@@ -546,7 +546,7 @@ testdata/               dpkg status files, apt-get -s outputs, vuln data fixture
 - **Golden-file tests** for each report format.
 - **`aptwatch cve`**: every status, the fix command, kernels and reboots, and the formats, on synthetic packages and advisories (never a real host's package list). First-seen dates: seeding, later dating, reseeding and the KEV fallback.
 - **Report tests**: every format carries the same sections; hostile package text is escaped in HTML.
-- **Integration tests**: run the binary in containers (`debian:12`, `debian:13`, `ubuntu:22.04`, `ubuntu:24.04`, `ubuntu:26.04`) with a deliberately old package pinned, and check that it reports the expected CVE and update.
+- **Integration tests**: run the binary in containers (`debian:12`, `debian:13`, `ubuntu:22.04`, `ubuntu:24.04`, `ubuntu:26.04`) with a deliberately old package pinned, and check that it reports the expected CVE and update. Done: `go test -tags integration ./integration`, run weekly in CI.
 - **Ubuntu Pro**: run on a real Pro-attached host (Pro can't be attached inside a throwaway container without using a licence seat) and compare the pending security updates with `pro security-status`. ESM and `fix requires Pro` matching is covered by unit tests on synthetic advisories. Real-host output is never kept as fixtures. Done 2026-10-22 on Ubuntu 24.04 with esm-apps and esm-infra enabled: the same 11 security updates at the same versions.
 - **Debian**: checked by running reports on a real Debian host (done 2026-10-22). No `debsecan` comparison.
 

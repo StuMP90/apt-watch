@@ -546,7 +546,7 @@ Well covered:
 
 Not covered by automated tests:
 
-- The end-to-end path: running apt-get, downloading the vulnerability feeds and putting the pieces together. The functions that read the system files are tested on temporary files. The `run`, `scan`, `cve`, `db` and `config` commands are covered by runs on real hosts instead (see [Supported systems](#supported-systems)). On Ubuntu 24.04 with Ubuntu Pro, aptwatch found the same pending security updates, at the same versions, as `pro security-status`.
+- The end-to-end path inside the unit tests: running apt-get, downloading the vulnerability feeds and putting the pieces together. The functions that read the system files are tested on temporary files. The [integration tests](#integration-tests) cover `run` on every supported release, and the `scan`, `cve`, `db` and `config` commands are covered by runs on real hosts (see [Supported systems](#supported-systems)). On Ubuntu 24.04 with Ubuntu Pro, aptwatch found the same pending security updates, at the same versions, as `pro security-status`.
 
 aptwatch reads the output of `apt-get -s`, which apt doesn't promise to keep stable, as well as the Ubuntu and Debian vulnerability feeds. A change to any of these formats in a later release could stop updates or CVEs being recognised. After a major apt upgrade, compare a report with `apt list --upgradable`, or with `pro security-status` on Ubuntu.
 
@@ -561,8 +561,20 @@ The code is laid out like this:
 | `internal/report` | The text, HTML and JSON output |
 | `internal/state` | The state file |
 | `internal/debver` | Comparing Debian version numbers |
+| `integration/` | The container tests |
 
-Every push to `main` and every pull request runs gofmt, vet and the tests in GitHub Actions.
+Every push to `main` and every pull request runs gofmt, vet and the unit tests in GitHub Actions. The integration tests run weekly and can be started by hand from the Actions tab.
+
+### Integration tests
+
+The integration tests run the binary in `debian:12`, `debian:13`, `ubuntu:22.04`, `ubuntu:24.04` and `ubuntu:26.04` containers. Each container installs an old version of a package that has a newer version in the security pocket, then runs `aptwatch run`. The test checks that the report lists the security update and at least one CVE it fixes. They need Docker and internet access, take a couple of minutes, and download each release's vulnerability data:
+
+```sh
+go test -tags integration -v ./integration
+APTWATCH_IMAGES=debian:12,ubuntu:24.04 go test -tags integration -v ./integration
+```
+
+The package is picked from a list when the test runs, so the test doesn't depend on particular versions. A failure can come from a change in a distribution's archive or vulnerability feed as well as from a change in aptwatch: the log names the package and both versions.
 
 ### Releases
 
