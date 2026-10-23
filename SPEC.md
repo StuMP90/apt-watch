@@ -484,7 +484,7 @@ report:
 ### 11.1 Build and packaging
 
 - `CGO_ENABLED=0`, `-trimpath`, version stamped via `-ldflags`. Builds for `linux/amd64` and `linux/arm64`.
-- `.deb` built with **nfpm** (or GoReleaser): binary in `/usr/sbin/aptwatch`, example config, cron file, systemd units, and a man page generated from cobra. `Recommends: needrestart, distro-info-data`.
+- `.deb` built with **nfpm** (or GoReleaser): binary in `/usr/sbin/aptwatch`, example config, cron file, systemd units, and a man page generated from cobra. `Recommends: distro-info-data`.
 - Signed checksums for releases. Optionally a small apt repository later.
 
 ### 11.2 Scheduling (both shipped; the admin enables one)
@@ -563,4 +563,4 @@ testdata/               dpkg status files, apt-get -s outputs, vuln data fixture
 | **M4** | Report formats: `text`, `html`, `json` via `--format` / `report.format` (done; notifications removed) | `run --format html > page.html` gives a self-contained page; report tests pass |
 | **M4a** | `aptwatch cve` (§3.1) and Debian first-seen publish dates (§6.2) (done) | `aptwatch cve CVE-ID` gives the right status and exit code on the dev machine; unit tests pass |
 | **M4b** | Ignore rules (§7.3), `db update` / `db status`, `config check`, `--nagios` (done) | Unit tests pass; an ignore rule on the dev machine moves its finding to "Suppressed findings" |
-| **M5** | `.deb` packaging, cron/systemd units, man page, README, CI | Install from `.deb` on a clean VM, edit config, get a report on the next run |
+| **M5** | `.deb` packaging, README and CI (done), cron/systemd units, man page | Install from `.deb` on a clean VM, edit config, get a report on the next run |

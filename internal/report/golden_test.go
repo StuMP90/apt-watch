@@ -116,8 +116,8 @@ func goldenReport() *Report {
 		OS:       collect.OSRelease{ID: "ubuntu", VersionID: "24.04", Codename: "noble", PrettyName: "Ubuntu 24.04.3 LTS"},
 		EOL: &collect.EOL{SecurityEnd: time.Date(2029, 5, 31, 0, 0, 0, 0, time.UTC),
 			ExtendedEnd: time.Date(2034, 4, 30, 0, 0, 0, 0, time.UTC), Note: "ESM with Ubuntu Pro until 2034-04-30"},
-		Reboot: collect.Reboot{Required: true, Since: ago(3 * day), Packages: []string{"linux-image-6.8.0-91-generic", "libc6"}},
-		Kernel: collect.Kernel{Running: "6.8.0-90-generic", Newest: "6.8.0-91-generic"},
+		Reboot:       collect.Reboot{Required: true, Since: ago(3 * day), Packages: []string{"linux-image-6.8.0-91-generic", "libc6"}},
+		Kernel:       collect.Kernel{Running: "6.8.0-90-generic", Newest: "6.8.0-91-generic"},
 		ListsUpdated: ago(4 * day),
 	}
 	return r

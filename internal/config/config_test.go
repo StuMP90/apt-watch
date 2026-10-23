@@ -3,6 +3,8 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -112,5 +114,34 @@ func TestLoadErrors(t *testing.T) {
 	}
 	if c, _, err := Load("/nonexistent/config.yaml", false); err != nil || c.Policy.ExitThreshold != risk.High || c.Report.Format != "text" {
 		t.Errorf("default load: %v", err)
+	}
+}
+
+// TestPackagedConfig checks that the commented-out values in the config
+// file shipped in the .deb are the defaults, and that it sets nothing as
+// shipped.
+func TestPackagedConfig(t *testing.T) {
+	b, err := os.ReadFile("../../packaging/config.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	uncommented := regexp.MustCompile(`(?m)^# ( *[a-z_]+:.*)$`).ReplaceAll(b, []byte("$1"))
+	for name, body := range map[string][]byte{"as shipped": b, "uncommented": uncommented} {
+		p := write(t, string(body))
+		c, warnings, err := Load(p, true)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if len(warnings) > 0 {
+			t.Errorf("%s: warnings %v", name, warnings)
+		}
+		want := Default()
+		want.Path = p
+		if !reflect.DeepEqual(c, want) {
+			t.Errorf("%s: got %+v, want the defaults %+v", name, c, want)
+		}
+	}
+	if string(uncommented) == string(b) {
+		t.Error("no keys uncommented")
 	}
 }

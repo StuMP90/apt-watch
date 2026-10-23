@@ -59,9 +59,31 @@ CGO_ENABLED=0 go build -trimpath -o aptwatch ./cmd/aptwatch
 go test ./...
 ```
 
-The binary is static, so you can build it once and copy it to every host of the same architecture.
+The binary is static, so you can build it once and copy it to every host of the same architecture. A local build reports its version as `dev`; release builds carry the tag's version.
 
 ## Installing
+
+### From a release
+
+Each [release](https://github.com/StuMP90/apt-watch/releases) has a `.deb` and a tarball for amd64 and arm64, with their SHA-256 sums in `checksums.txt`.
+
+```sh
+sudo apt install ./aptwatch_0.9.0_amd64.deb
+```
+
+Installing with `apt` rather than `dpkg -i` also pulls in the dependencies: `ca-certificates`, `xz-utils`, and `distro-info-data` for the end-of-life check. The package installs:
+
+- `/usr/sbin/aptwatch`
+- `/etc/aptwatch/config.yaml`, with every setting commented out at its default. It is a conffile, so upgrades keep your edits.
+- `/var/lib/aptwatch` and `/var/cache/aptwatch`
+
+`apt remove` keeps the config, state and cache. `apt purge` deletes them.
+
+The package doesn't schedule anything yet: see [Scheduling](#scheduling).
+
+### By hand
+
+Use the binary from a release tarball, or one you built. The tarball also has the commented config as `config.yaml.example`.
 
 ```sh
 sudo install -o root -g root -m 0755 aptwatch /usr/sbin/aptwatch
@@ -540,11 +562,29 @@ The code is laid out like this:
 | `internal/state` | The state file |
 | `internal/debver` | Comparing Debian version numbers |
 
+Every push to `main` and every pull request runs gofmt, vet and the tests in GitHub Actions.
+
+### Releases
+
+Pushing a tag `vX.Y.Z` runs the release workflow. It runs the tests, then GoReleaser builds the binaries, tarballs and `.deb` packages and publishes them as a GitHub release:
+
+```sh
+git tag v0.9.0 && git push origin v0.9.0
+```
+
+A tag with a suffix, such as `v0.9.0-rc1`, is published as a pre-release. In the `.deb` version the suffix becomes `~rc1`, so that it sorts before `0.9.0`.
+
+To build the same files locally without publishing anything (they go in `dist/`):
+
+```sh
+goreleaser release --snapshot --clean
+```
+
 ## Not yet implemented
 
 These are in SPEC.md but not built yet:
 
-- **Packaging** (milestone M5): a `.deb`, systemd units and a man page. Until then, install by hand as described above.
+- **Scheduling files and a man page** (milestone M5): the `.deb` doesn't ship a cron file, systemd units or a man page yet. Until then, set up scheduling by hand as described in [Scheduling](#scheduling).
 
 ## Licence
 

@@ -27,7 +27,8 @@ import (
 	"aptwatch/internal/vulndb"
 )
 
-var version = "0.1.0-dev"
+// version is set by release builds (-ldflags "-X main.version=...").
+var version = "dev"
 
 // Exit codes (SPEC §3).
 const (

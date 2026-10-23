@@ -1,0 +1,45 @@
+# /etc/aptwatch/config.yaml
+#
+# Every key is optional and the commented values are the defaults, so this
+# file changes nothing until you uncomment a line. An unknown key is an
+# error. Keep the file owned by root and not group- or world-writable, or
+# aptwatch refuses to run as root. Check it with `aptwatch config check`.
+#
+# Durations are Go durations with a d (day) unit added, e.g. 36h or 14d.
+# For ignore rules, see the README: /usr/share/doc/aptwatch/README.md
+
+# host_label: ""                 # name shown in reports; default: the hostname
+# lock_file: /run/aptwatch.lock
+
+# apt:
+#   refresh_lists: true          # run apt-get update before checking...
+#   refresh_if_older_than: 6h    # ...if the lists are older than this
+#   lock_timeout: 10m            # how long to wait for apt's lock
+#   stale_after: 48h             # warn if the lists are older than this
+
+# vulndb:
+#   sources: [auto]              # auto: debian-tracker on Debian, osv-ubuntu on Ubuntu
+#   kev: true                    # CISA Known Exploited Vulnerabilities
+#   epss: true                   # FIRST exploit prediction scores
+#   max_age: 20h                 # download again if the cache is older than this
+#   stale_after: 72h             # warn if the data is older than this
+#   cache_dir: /var/cache/aptwatch
+#   max_size: 1GiB               # largest download accepted
+#   changelogs: true             # read third-party package changelogs
+
+# policy:
+#   exit_threshold: high         # lowest severity that gives exit code 1
+#   escalate_after: 7d           # raise a pending fix's severity after this long
+#   epss_bump: 0.5               # raise severity if EPSS is at least this
+#   reboot_escalate_after: 7d    # raise a pending reboot to high after this long
+#   eol_warn_before: 90d         # warn this long before the OS reaches end of life
+#   report_unfixed_cves: summary # none | summary | full: CVEs with no fix yet
+#   recent_cves: 90d             # how far back "recent CVEs" in third-party packages go
+#   report_third_party_gaps: true # flag third-party packages the distribution has fixed but the changelog doesn't mention
+
+# state:
+#   file: /var/lib/aptwatch/state.json
+#   keep_resolved: 30d           # how long resolved findings stay in the state
+
+# report:
+#   format: text                 # text | html | json

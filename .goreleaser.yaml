@@ -1,0 +1,81 @@
+# Release builds: push a tag such as v0.9.0 and the release workflow runs
+# this. Test locally with: goreleaser release --snapshot --clean
+version: 2
+
+project_name: aptwatch
+
+builds:
+  - main: ./cmd/aptwatch
+    binary: aptwatch
+    env:
+      - CGO_ENABLED=0
+    goos: [linux]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_linux_{{ .Arch }}"
+    files:
+      - README.md
+      - LICENSE
+      - src: packaging/config.yaml
+        dst: config.yaml.example
+
+checksum:
+  name_template: checksums.txt
+
+nfpms:
+  - package_name: aptwatch
+    file_name_template: "{{ .ConventionalFileName }}"
+    homepage: https://github.com/StuMP90/apt-watch
+    maintainer: Stuart Millington <gitstm90@dsv1.co.uk>
+    description: |-
+      Security update and CVE reporting for Debian and Ubuntu hosts
+      aptwatch checks a host for pending security updates, CVEs in installed
+      packages, required reboots, old kernels and end-of-life releases, and
+      writes a text, HTML or JSON report.
+    license: MIT
+    section: admin
+    priority: optional
+    formats: [deb]
+    bindir: /usr/sbin
+    dependencies:
+      - apt
+      - ca-certificates
+      - xz-utils
+    recommends:
+      - distro-info-data
+    contents:
+      - src: packaging/config.yaml
+        dst: /etc/aptwatch/config.yaml
+        type: config
+        file_info:
+          mode: 0600
+      - dst: /var/lib/aptwatch
+        type: dir
+        file_info:
+          mode: 0700
+      - dst: /var/cache/aptwatch
+        type: dir
+        file_info:
+          mode: 0700
+      - src: README.md
+        dst: /usr/share/doc/aptwatch/README.md
+        file_info:
+          mode: 0644
+      - src: LICENSE
+        dst: /usr/share/doc/aptwatch/copyright
+        file_info:
+          mode: 0644
+    scripts:
+      postremove: packaging/postrm
+
+changelog:
+  sort: asc
+
+release:
+  prerelease: auto

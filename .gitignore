@@ -12,3 +12,6 @@
 
 # Test coverage profile
 /cover.out
+
+# GoReleaser output
+/dist/
