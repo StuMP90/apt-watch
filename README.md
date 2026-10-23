@@ -4,7 +4,7 @@ aptwatch checks a Debian or Ubuntu server for security updates it hasn't install
 
 You can use it in two ways:
 
-- **Daily report.** Run it once a day as root, usually from cron. What happens to the report next is up to you: cron can mail it, you can redirect it to a file, or you can pipe it to a handler.
+- **Daily report.** Run it once a day as root, from cron or a systemd timer. What happens to the report next is up to you: cron can mail it, you can redirect it to a file, or you can pipe it to a handler.
 - **On-demand CVE check.** When a CVE is in the news, `aptwatch cve CVE-ID...` tells you straight away whether this host is affected and, if it is, what to do (see [Checking specific CVEs](#checking-specific-cves)).
 
 It answers three questions:
@@ -34,7 +34,6 @@ The full design is in [SPEC.md](SPEC.md).
 - [Third-party repositories](#third-party-repositories)
 - [Files](#files)
 - [Development](#development)
-- [Not yet implemented](#not-yet-implemented)
 - [Licence](#licence)
 
 ## Supported systems
@@ -76,14 +75,16 @@ Installing with `apt` rather than `dpkg -i` also pulls in the dependencies: `ca-
 - `/usr/sbin/aptwatch`
 - `/etc/aptwatch/config.yaml`, with every setting commented out at its default. It is a conffile, so upgrades keep your edits.
 - `/var/lib/aptwatch` and `/var/cache/aptwatch`
+- Example cron and systemd files in `/usr/share/doc/aptwatch/examples/`
+- Man pages: `man aptwatch`, and one per command, such as `man aptwatch-run`
 
 `apt remove` keeps the config, state and cache. `apt purge` deletes them.
 
-The package doesn't schedule anything yet: see [Scheduling](#scheduling).
+The package doesn't schedule anything: when and how aptwatch runs, and where the report goes, is up to you. See [Scheduling](#scheduling).
 
 ### By hand
 
-Use the binary from a release tarball, or one you built. The tarball also has the commented config as `config.yaml.example`.
+Use the binary from a release tarball, or one you built. The tarball also has the commented config as `config.yaml.example`, the scheduling examples in `examples/` and the man pages in `man/`.
 
 ```sh
 sudo install -o root -g root -m 0755 aptwatch /usr/sbin/aptwatch
@@ -272,9 +273,15 @@ aptwatch run --quiet | mail -s "aptwatch $(hostname)" admin@example.com
 
 ## Scheduling
 
-aptwatch is meant to run once a day as root.
+aptwatch is meant to run once a day as root. Installing it doesn't set up a schedule. The package has examples for cron and systemd in `/usr/share/doc/aptwatch/examples/` (`examples/` in the tarball): copy one and change the time and delivery to suit. If you run aptwatch on many hosts, give each a different time so they don't all fetch the vulnerability data at once. The systemd timer's `RandomizedDelaySec` does this for you.
 
-**cron** (`/etc/cron.d/aptwatch`). cron mails the output to `MAILTO` if the host can send mail:
+**cron.** cron mails the output to `MAILTO` if the host can send mail. The file name in `/etc/cron.d` must not contain a dot, or cron ignores it:
+
+```sh
+sudo cp /usr/share/doc/aptwatch/examples/aptwatch.cron /etc/cron.d/aptwatch
+```
+
+The example runs:
 
 ```
 MAILTO=admin@example.com
@@ -287,12 +294,20 @@ To mail only when there is something to act on, wrap it in a script that tests t
 25 6 * * * root /usr/sbin/aptwatch run --quiet --format html > /var/www/status/report.html
 ```
 
-**systemd timer.** The report goes to the journal unless you redirect it:
+**systemd timer.** The report goes to the journal (`journalctl -u aptwatch`). To send it elsewhere, point `ExecStart` at a wrapper script, or set `StandardOutput=truncate:/path/report.html` and add `--format html`.
+
+```sh
+sudo cp /usr/share/doc/aptwatch/examples/aptwatch.service \
+        /usr/share/doc/aptwatch/examples/aptwatch.timer /etc/systemd/system/
+```
+
+The example units are:
 
 ```ini
 # /etc/systemd/system/aptwatch.service
 [Unit]
 Description=aptwatch security update check
+Documentation=man:aptwatch(8)
 Wants=network-online.target
 After=network-online.target
 
@@ -301,12 +316,17 @@ Type=oneshot
 ExecStart=/usr/sbin/aptwatch run --quiet
 # Exit codes 1 and 2 report findings and warnings, not failures
 SuccessExitStatus=1 2
+ProtectHome=read-only
+PrivateTmp=yes
+ProtectKernelTunables=yes
+RestrictSUIDSGID=yes
 ```
 
 ```ini
 # /etc/systemd/system/aptwatch.timer
 [Unit]
 Description=Daily aptwatch run
+Documentation=man:aptwatch(8)
 
 [Timer]
 OnCalendar=*-*-* 06:25
@@ -316,6 +336,8 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 ```
+
+Then enable the timer:
 
 ```sh
 sudo systemctl daemon-reload
@@ -510,6 +532,8 @@ The report also lists each third-party repository with its packages. Repositorie
 | `/var/lib/aptwatch/state.json` | Findings from previous runs, used for "changes since last run" and escalation |
 | `/var/cache/aptwatch/` | Vulnerability data, Debian first-seen dates, downloaded changelogs |
 | `/run/aptwatch.lock` | Stops two runs overlapping |
+| `/usr/share/doc/aptwatch/examples/` | Example cron and systemd files |
+| `/usr/share/man/man8/aptwatch*.8.gz` | Man pages |
 
 aptwatch only reads the package database and runs `apt-get update`, `apt-get download` and `apt-get -s dist-upgrade`. The `-s` means simulate: apt lists the updates it would install and changes nothing. aptwatch never installs, upgrades or removes anything.
 
@@ -574,7 +598,7 @@ The code is laid out like this:
 | `internal/debver` | Comparing Debian version numbers |
 | `integration/` | The container tests |
 
-Every push to `main` and every pull request runs gofmt, vet and the unit tests in GitHub Actions. The integration tests run weekly and can be started by hand from the Actions tab.
+Every push to `main` and every pull request runs gofmt, vet and the unit tests in GitHub Actions, including the man page test (`go test -tags genman ./cmd/aptwatch`). The integration tests run weekly and can be started by hand from the Actions tab.
 
 ### Integration tests
 
@@ -589,7 +613,7 @@ The package is picked from a list when the test runs, so the test doesn't depend
 
 ### Releases
 
-Pushing a tag `vX.Y.Z` runs the release workflow. It runs the tests, then GoReleaser builds the binaries, tarballs and `.deb` packages and publishes them as a GitHub release:
+Pushing a tag `vX.Y.Z` runs the release workflow. It runs the tests, then GoReleaser generates the man pages, builds the binaries, tarballs and `.deb` packages and publishes them as a GitHub release:
 
 ```sh
 git tag v0.9.0 && git push origin v0.9.0
@@ -603,11 +627,11 @@ To build the same files locally without publishing anything (they go in `dist/`)
 goreleaser release --snapshot --clean
 ```
 
-## Not yet implemented
+The man pages are generated from the command help by a `genman` command that is only built with the `genman` tag, so the released binary doesn't include it. To generate them on their own (into `build/man/`):
 
-These are in SPEC.md but not built yet:
-
-- **Scheduling files and a man page** (milestone M5): the `.deb` doesn't ship a cron file, systemd units or a man page yet. Until then, set up scheduling by hand as described in [Scheduling](#scheduling).
+```sh
+go run -tags genman ./cmd/aptwatch genman build/man
+```
 
 ## Licence
 

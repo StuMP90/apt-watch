@@ -4,6 +4,12 @@ version: 2
 
 project_name: aptwatch
 
+before:
+  hooks:
+    # The man pages, dated by the commit so rebuilds are identical
+    - rm -rf build/man
+    - sh -c 'SOURCE_DATE_EPOCH={{ .CommitTimestamp }} go run -tags genman -ldflags "-X main.version={{ .Version }}" ./cmd/aptwatch genman build/man'
+
 builds:
   - main: ./cmd/aptwatch
     binary: aptwatch
@@ -24,6 +30,10 @@ archives:
       - LICENSE
       - src: packaging/config.yaml
         dst: config.yaml.example
+      - src: packaging/examples/*
+        dst: examples
+      - src: build/man/*
+        dst: man
 
 checksum:
   name_template: checksums.txt
@@ -69,6 +79,15 @@ nfpms:
           mode: 0644
       - src: LICENSE
         dst: /usr/share/doc/aptwatch/copyright
+        file_info:
+          mode: 0644
+      # Examples only: the package schedules nothing
+      - src: packaging/examples/*
+        dst: /usr/share/doc/aptwatch/examples/
+        file_info:
+          mode: 0644
+      - src: build/man/*
+        dst: /usr/share/man/man8/
         file_info:
           mode: 0644
     scripts:

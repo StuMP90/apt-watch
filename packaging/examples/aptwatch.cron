@@ -1,0 +1,14 @@
+# Example cron schedule for aptwatch. Nothing runs until you install it:
+#
+#   sudo cp /usr/share/doc/aptwatch/examples/aptwatch.cron /etc/cron.d/aptwatch
+#
+# (cron ignores files in /etc/cron.d whose names contain a dot.) Pick your
+# own time; on many hosts, give each a different minute so they don't all
+# fetch the vulnerability data at once.
+#
+# cron mails the report to MAILTO if the host can send mail. To keep it
+# instead, redirect it, e.g.
+#   ... run --quiet --format html > /var/www/status/report.html
+
+MAILTO=root
+25 6 * * * root /usr/sbin/aptwatch run --quiet

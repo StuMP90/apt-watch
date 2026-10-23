@@ -1,0 +1,26 @@
+# Example systemd service for aptwatch, started by aptwatch.timer. To use it:
+#
+#   sudo cp /usr/share/doc/aptwatch/examples/aptwatch.service \
+#           /usr/share/doc/aptwatch/examples/aptwatch.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now aptwatch.timer
+#
+# The report goes to the journal (journalctl -u aptwatch). To send it
+# elsewhere, point ExecStart at a wrapper script, or set e.g.
+# StandardOutput=truncate:/var/www/status/report.html with --format html.
+
+[Unit]
+Description=aptwatch security update check
+Documentation=man:aptwatch(8)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/aptwatch run --quiet
+# Exit codes 1 and 2 report findings and warnings, not failures
+SuccessExitStatus=1 2
+ProtectHome=read-only
+PrivateTmp=yes
+ProtectKernelTunables=yes
+RestrictSUIDSGID=yes

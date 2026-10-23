@@ -49,6 +49,9 @@ var g struct {
 	nagios   bool // errors are reported as a plugin's UNKNOWN
 }
 
+// extraCmds are commands added by builds with tags (genman.go).
+var extraCmds []func() *cobra.Command
+
 // sys is the system the commands check; tests replace it.
 var sys collect.Host
 
@@ -76,8 +79,24 @@ func main() {
 
 func newRoot() *cobra.Command {
 	root := &cobra.Command{
-		Use:           "aptwatch",
-		Short:         "Watch a Debian/Ubuntu host for pending updates and risks",
+		Use:   "aptwatch",
+		Short: "Watch a Debian/Ubuntu host for pending updates and risks",
+		Long: `aptwatch checks a Debian or Ubuntu host for pending security updates,
+CVEs in installed packages, required reboots, services that need
+restarting, old kernels and end-of-life releases, and prints a text, HTML
+or JSON report to standard output. It never installs or changes packages.
+
+run is the daily job: it also records its findings in
+/var/lib/aptwatch/state.json, so the next report shows what changed. The
+package schedules nothing: run it from cron or a systemd timer, as you
+choose. Examples are in /usr/share/doc/aptwatch/examples.
+
+The config file is /etc/aptwatch/config.yaml; vulnerability data is cached
+in /var/cache/aptwatch.
+
+Exit codes for run and scan: 0 nothing at or above policy.exit_threshold,
+1 findings at or above it, 2 warnings (stale data, a failed feed), 3 a
+fatal error.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(*cobra.Command, []string) error {
@@ -92,6 +111,9 @@ func newRoot() *cobra.Command {
 		Short: "Print the version",
 		Run:   func(*cobra.Command, []string) { fmt.Println("aptwatch", version) },
 	})
+	for _, c := range extraCmds {
+		root.AddCommand(c())
+	}
 	return root
 }
 
@@ -395,7 +417,7 @@ func cveCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cve CVE-ID...",
 		Short: "Report whether the host is affected by the given CVEs, and what fixes them",
-		Long: `Report the status of each CVE on the host (SPEC §3.1). Exits 1 if any
+		Long: `Report the status of each CVE on the host. Exits 1 if any
 needs action (a fix is pending, unreachable, needs Pro or a reboot, or
 there is none yet), 2 if any is unknown or there were warnings, else 0.`,
 		Args: cobra.MinimumNArgs(1),

@@ -1,0 +1,15 @@
+# Example systemd timer for aptwatch: runs aptwatch.service once a day.
+# See aptwatch.service for how to install both.
+
+[Unit]
+Description=Daily aptwatch run
+Documentation=man:aptwatch(8)
+
+[Timer]
+OnCalendar=*-*-* 06:25
+# Spreads the runs of many hosts so they don't all fetch the data at once
+RandomizedDelaySec=30m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

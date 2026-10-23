@@ -1,12 +1,12 @@
 # aptwatch — Specification & Plan
 
-Status: **Draft v0.6** (2026-10-22): v0.6 adds `aptwatch cve` (§3.1) and first-seen dates for Debian CVEs (§6.2).
+Status: **Draft v0.7** (2026-10-23): v0.7 ships cron and systemd examples instead of installing a schedule (§11.2), and adds man pages (§11.1).
 
 ---
 
 ## 1. Purpose
 
-A single static Go binary, run daily as root (cron or systemd timer) on Debian and Ubuntu servers, that:
+A single static Go binary, run daily as root (from cron or a systemd timer the admin sets up) on Debian and Ubuntu servers, that:
 
 1. Inventories installed packages and the system state that affects patching (kernel, reboot, services that need restarting, OS end-of-life).
 2. Works out which updates are available, and which of those are **security** updates.
@@ -485,13 +485,17 @@ report:
 ### 11.1 Build and packaging
 
 - `CGO_ENABLED=0`, `-trimpath`, version stamped via `-ldflags`. Builds for `linux/amd64` and `linux/arm64`.
-- `.deb` built with **nfpm** (or GoReleaser): binary in `/usr/sbin/aptwatch`, example config, cron file, systemd units, and a man page generated from cobra. `Recommends: distro-info-data`.
+- `.deb` built with **nfpm** (or GoReleaser): binary in `/usr/sbin/aptwatch`, example config, the scheduling examples (§11.2) in `/usr/share/doc/aptwatch/examples/`, and section 8 man pages (`aptwatch(8)` and one per command) in `/usr/share/man/man8/`. `Recommends: distro-info-data`.
+- The man pages are generated from the cobra commands at release time by a `genman` command that only exists in builds with the `genman` tag, so the shipped binary doesn't carry the generator. `SOURCE_DATE_EPOCH` (the commit time) dates them, so rebuilds are identical.
 - Signed checksums for releases. Optionally a small apt repository later.
 
-### 11.2 Scheduling (both shipped; the admin enables one)
+### 11.2 Scheduling (examples only; the package schedules nothing)
 
-- **cron**: `/etc/cron.d/aptwatch` → `25 6 * * * root /usr/sbin/aptwatch run --quiet`. cron mails stdout to `MAILTO` when the host can send mail.
-- **systemd**: `aptwatch.timer` (`OnCalendar=daily`, `RandomizedDelaySec=1h`, `Persistent=true`) + `aptwatch.service` (`Type=oneshot`). The service adds hardening that doesn't break the tool: `ProtectHome=read-only`, `PrivateTmp=yes`, `ProtectKernelTunables=yes`, `RestrictSUIDSGID=yes`, and `ReadWritePaths` for the cache, state and apt lists. The report goes to the journal (`journalctl -u aptwatch`); use `StandardOutput=file:` or a wrapper script to send it elsewhere.
+Installing the package doesn't start any schedule. When and how to run it, and where the report goes, is the admin's choice. Examples for both methods are shipped in `/usr/share/doc/aptwatch/examples/` to copy and edit:
+
+
+- **cron** (`aptwatch.cron`, copied to `/etc/cron.d/aptwatch`): `25 6 * * * root /usr/sbin/aptwatch run --quiet`. cron mails stdout to `MAILTO` when the host can send mail.
+- **systemd** (`aptwatch.timer` and `aptwatch.service`, copied to `/etc/systemd/system/`): the timer has `OnCalendar=*-*-* 06:25`, `RandomizedDelaySec=30m` and `Persistent=true`; the service is `Type=oneshot` with `SuccessExitStatus=1 2`, so findings and warnings (§3) don't mark the unit failed. It adds hardening that doesn't break the tool: `ProtectHome=read-only`, `PrivateTmp=yes`, `ProtectKernelTunables=yes` and `RestrictSUIDSGID=yes`. The report goes to the journal (`journalctl -u aptwatch`); use `StandardOutput=file:` or a wrapper script to send it elsewhere.
 - Delivery is by redirect or pipe. The exit code (§3) lets a wrapper act only on risks:
 
 ```sh
@@ -506,14 +510,14 @@ MAILTO=ops@example.com
 25 6 * * * root /usr/sbin/aptwatch run --format json | /usr/local/bin/report-handler
 ```
 
-- The run waits a random 0–`jitter` (default 0 for cron, systemd handles it) so many hosts don't hit the data sources at the same moment.
+- To keep many hosts from hitting the data sources at the same moment, give them different cron minutes or rely on the timer's `RandomizedDelaySec`.
 
 ---
 
 ## 12. Code layout
 
 ```
-cmd/aptwatch/           main.go, cobra commands
+cmd/aptwatch/           main.go, cobra commands, genman.go (man pages, `genman` build tag)
 internal/config/        load, defaults, validation, permission checks
 internal/debver/        Debian version parsing and comparison
 internal/collect/
@@ -538,7 +542,7 @@ internal/state/         state.json load/save/diff
 internal/report/        model and formats: text, html (embedded html/template), json
 internal/runx/          safe exec helper (argv only, timeout, LC_ALL=C, minimal env)
 internal/httpx/         HTTP client: timeouts, size limits, user agent, retries
-packaging/              nfpm.yaml, cron.d, systemd units, example config
+packaging/              example config, postrm, examples/ (cron and systemd); the .deb is defined in .goreleaser.yaml
 testdata/               dpkg status files, apt-get -s outputs, vuln data fixtures, golden reports
 ```
 
@@ -548,6 +552,7 @@ testdata/               dpkg status files, apt-get -s outputs, vuln data fixture
 
 - **Unit tests**: `debver` with Debian's own comparison test vectors; parsers fed synthetic `dpkg/status` and `apt-get -s` outputs in the format each supported release's apt version prints (2.4 on Ubuntu 22.04, 2.6 on Debian 12, 2.8 on Ubuntu 24.04, 3.0 on Debian 13, 3.1 on Ubuntu 26.04), including phased updates, Debian and Ubuntu origin labels, ESM and each release's kernel package names; matching truth tables; the system rules (reboot, kernel, end of life, stale lists) and risk escalation; the service-restart scan on a synthetic `/proc` tree (cgroup v1 and v2, merged `/usr`, user sessions and containers left out, unreadable processes), `apt-cache policy` parsing for held packages, Livepatch status, and restart escalation by CVE; state diffing.
 - **Golden-file tests** for each report format.
+- **Man pages**: `go test -tags genman ./cmd/aptwatch` generates them and checks the pages, the date taken from `SOURCE_DATE_EPOCH`, and that the hidden and completion commands are left out.
 - **`aptwatch cve`**: every status, the fix command, kernels and reboots, and the formats, on synthetic packages and advisories (never a real host's package list). First-seen dates: seeding, later dating, reseeding and the KEV fallback.
 - **Report tests**: every format carries the same sections; hostile package text is escaped in HTML.
 - **Command tests**: `run`, `scan`, `cve`, `db` and `config check` run in-process against a synthetic host: system files under a temporary root, a fake `apt-get` and `apt-cache`, and a seeded feed cache. They check exit codes, the first and second runs' diffs, `--dry-run`, the saved state, stale feeds, and config warnings and errors. The config file's root-ownership check is replaced in tests, which can't create root-owned files; one test checks that the real check rejects a file owned by the user.
@@ -568,4 +573,4 @@ testdata/               dpkg status files, apt-get -s outputs, vuln data fixture
 | **M4** | Report formats: `text`, `html`, `json` via `--format` / `report.format` (done; notifications removed) | `run --format html > page.html` gives a self-contained page; report tests pass |
 | **M4a** | `aptwatch cve` (§3.1) and Debian first-seen publish dates (§6.2) (done) | `aptwatch cve CVE-ID` gives the right status and exit code on the dev machine; unit tests pass |
 | **M4b** | Ignore rules (§7.3), `db update` / `db status`, `config check`, `--nagios` (done) | Unit tests pass; an ignore rule on the dev machine moves its finding to "Suppressed findings" |
-| **M5** | `.deb` packaging, README and CI (done), cron/systemd units, man page | Install from `.deb` on a clean VM, edit config, get a report on the next run |
+| **M5** | `.deb` packaging, README and CI, cron and systemd examples, man pages (done) | Install from `.deb` on a clean VM, set up a schedule from the examples, get a report on the next run |
