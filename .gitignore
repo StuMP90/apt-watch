@@ -8,7 +8,7 @@
 
 # Reports from real hosts: they list installed packages and vulnerabilities
 *.html
-!testdata/**/*.html
+!**/testdata/**/*.html
 
 # Test coverage profile
 /cover.out

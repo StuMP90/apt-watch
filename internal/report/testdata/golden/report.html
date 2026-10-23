@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="aptwatch test">
+<title>web01: 1 CRITICAL, 1 HIGH, 2 MEDIUM, 1 LOW — 5 updates pending (3 security, 1 phased) — reboot required (3d)</title>
+<style>
+:root {
+  --bg: #ffffff; --fg: #1f2328; --muted: #656d76; --line: #d0d7de; --panel: #f6f8fa;
+  --link: #0969da;
+  --critical: #a40e26; --high: #cf222e; --medium: #9a6700; --low: #0969da; --info: #656d76;
+  --ok: #1a7f37;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --fg: #e6edf3; --muted: #8d96a0; --line: #30363d; --panel: #161b22;
+    --link: #4493f8;
+    --critical: #ff7b72; --high: #f85149; --medium: #d29922; --low: #4493f8; --info: #8d96a0;
+    --ok: #3fb950;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+main { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 1.35em; margin: 0 0 4px; overflow-wrap: anywhere; }
+h2 { font-size: 1.1em; margin: 32px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+h3 { font-size: 1em; margin: 16px 0 6px; }
+a { color: var(--link); }
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+.muted { color: var(--muted); }
+.top { border-left: 6px solid var(--info); padding: 4px 0 4px 14px; }
+.top.critical { border-color: var(--critical); } .top.high { border-color: var(--high); }
+.top.medium { border-color: var(--medium); } .top.low { border-color: var(--low); }
+.top.info, .top.ok { border-color: var(--ok); }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; vertical-align: top; padding: 4px 12px 4px 0; border-bottom: 1px solid var(--line); }
+th { font-weight: 600; white-space: nowrap; }
+table.kv th { width: 7em; color: var(--muted); font-weight: normal; }
+.badge { display: inline-block; min-width: 5.5em; padding: 1px 6px; border-radius: 4px; text-align: center;
+  font-size: 0.75em; font-weight: 700; letter-spacing: 0.04em; color: #fff; background: var(--info); }
+.badge.critical { background: var(--critical); } .badge.high { background: var(--high); }
+.badge.medium { background: var(--medium); } .badge.low { background: var(--low); }
+.badge.ok { background: var(--ok); }
+.tag { font-size: 0.75em; font-weight: 700; letter-spacing: 0.04em; }
+.tag.resolved { color: var(--ok); }
+ul.findings { list-style: none; margin: 0; padding: 0; }
+ul.findings > li { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.title { font-weight: 600; overflow-wrap: anywhere; }
+.detail { margin: 4px 0 0; overflow-wrap: anywhere; }
+ul.cves { margin: 4px 0 0; padding-left: 20px; }
+.kev { color: var(--critical); font-weight: 600; }
+pre { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px;
+  overflow-x: auto; margin: 0; }
+ul.warnings { padding-left: 20px; }
+footer { margin-top: 40px; font-size: 0.85em; }
+</style>
+</head>
+<body>
+<main>
+<div class="top critical">
+<h1>web01: 1 CRITICAL, 1 HIGH, 2 MEDIUM, 1 LOW — 5 updates pending (3 security, 1 phased) — reboot required (3d)</h1>
+<div class="muted">Thursday 22 October 2026, 06:00 UTC</div>
+</div>
+
+<h2>System</h2>
+<div class="scroll"><table class="kv">
+<tr><th>Host</th><td>web01</td></tr>
+<tr><th>OS</th><td>Ubuntu 24.04.3 LTS (security support until 2029-05-31; ESM with Ubuntu Pro until 2034-04-30)</td></tr>
+<tr><th>Kernel</th><td>6.8.0-90-generic (newest installed: 6.8.0-91-generic)</td></tr>
+<tr><th>Reboot</th><td>required since 2026-10-19 06:00 (linux-image-6.8.0-91-generic, libc6)</td></tr>
+<tr><th>Apt lists</th><td>updated 4d ago</td></tr>
+<tr><th>CVE data</th><td>ubuntu-cve-tracker, updated 5h ago (&#43;KEV, EPSS)<br><span class="muted">14 CVEs with no fix yet affect 6 installed source packages: zlib (5), example (4), imagelib (2), and 3 more</span></td></tr>
+<tr><th>Checked</th><td>2026-10-22 06:00 UTC by aptwatch test</td></tr>
+</table></div>
+
+<h2>Changes since last run</h2>
+<div class="scroll"><table>
+<tr><td class="tag escalated">ESCALATED</td><td><span class="badge critical">CRITICAL</span></td><td>CVE-2026-10001 in openssl: fix available</td></tr>
+<tr><td class="tag new">NEW</td><td><span class="badge high">HIGH</span></td><td>2 CVEs in example: fix available</td></tr>
+<tr><td class="tag resolved">RESOLVED</td><td><span class="badge high">HIGH</span></td><td>CVE-2026-09999 in sudo: fix available</td></tr>
+</table></div>
+
+<h2>Findings (5)</h2>
+<ul class="findings">
+<li>
+<span class="badge critical">CRITICAL</span>
+<span class="title">CVE-2026-10001 in openssl: fix available</span> <span class="muted">— since 2026-10-13 (9d)</span>
+<p class="detail">Remote code execution in the TLS handshake &lt;and&gt; heap overflow.</p>
+<div class="detail muted">Packages: <span class="mono">libssl3t64, openssl</span></div>
+<ul class="cves">
+<li><span class="mono"><a href="https://ubuntu.com/security/CVE-2026-10001">CVE-2026-10001</a></span> <span class="kev">(high, ★ known exploited, EPSS 42%)</span></li>
+</ul>
+</li>
+<li>
+<span class="badge high">HIGH</span>
+<span class="title">2 CVEs in example: fix available</span> <span class="muted">— since 2026-10-20 (2d)</span>
+<div class="detail muted">Packages: <span class="mono">libexample1, libexample-dev, libexample-doc, libexample-tools, libexample-utils, python3-example, example-bin, example-common, and 2 more</span></div>
+<ul class="cves">
+<li><span class="mono"><a href="https://ubuntu.com/security/CVE-2026-10002">CVE-2026-10002</a></span> <span>(medium, EPSS 12%)</span></li>
+<li><span class="mono">CVE-2026-10003</span> <span>(low)</span></li>
+</ul>
+</li>
+<li>
+<span class="badge medium">MEDIUM</span>
+<span class="title">Reboot required</span> <span class="muted">— since 2026-10-19 (3d)</span>
+</li>
+<li>
+<span class="badge medium">MEDIUM</span>
+<span class="title">apt lists last updated 4 days ago</span>
+<p class="detail">Run apt-get update, or check the apt-daily timer.</p>
+</li>
+<li>
+<span class="badge low">LOW</span>
+<span class="title">CVE-2026-10004 in zlib: no fix yet</span> <span class="muted">— first seen 2026-09-22</span>
+<ul class="cves">
+<li><span class="mono">CVE-2026-10004</span> <span>(low)</span></li>
+</ul>
+</li>
+</ul>
+
+<h2>Suppressed findings (2)</h2>
+<ul class="findings">
+<li>
+<span class="badge high">HIGH</span>
+<span class="title">CVE-2026-10007 in curl: fix available</span>
+<p class="detail muted">ignored (CVE-2026-10007, until 2026-12-31): not reachable from our services</p>
+</li>
+<li>
+<span class="badge low">LOW</span>
+<span class="title">vim: update pending</span>
+<p class="detail muted">ignored (package vim* (update-pending)): pinned</p>
+</li>
+</ul>
+<ul class="warnings">
+<li>ignore rule CVE-2026-09000 expired on 2026-10-01 (waiting for vendor): its findings count again; renew or remove it</li>
+<li>ignore rule package nginx* (update-pending) expired on 2026-10-15 (held for testing): its findings count again; renew or remove it</li>
+</ul>
+
+<h2>Recent CVEs fixed in installed third-party packages</h2>
+<ul class="findings">
+<li>
+<span class="title">example-php 8.3.12 fixes 2 recent CVEs</span>
+<ul class="cves">
+<li><span class="mono"><a href="https://ubuntu.com/security/CVE-2026-10005">CVE-2026-10005</a></span> <span class="kev">(critical, ★ known exploited)</span></li>
+<li><span class="mono">CVE-2026-10006</span></li>
+</ul>
+</li>
+</ul>
+
+<h2>Pending updates (5)</h2>
+<h3>Security (3)</h3>
+<div class="scroll"><table>
+<tr><th>Package</th><th>Installed</th><th>Candidate</th><th>Suite</th><th></th></tr>
+<tr><td class="mono">libssl3t64</td><td class="mono">3.0.13-0ubuntu3.5</td><td class="mono">3.0.13-0ubuntu3.6</td><td>noble-security</td><td></td></tr>
+<tr><td class="mono">openssl</td><td class="mono">3.0.13-0ubuntu3.5</td><td class="mono">3.0.13-0ubuntu3.6</td><td>noble-security</td><td></td></tr>
+<tr><td class="mono">python3-example</td><td class="mono">2.4.1-1ubuntu0.1</td><td class="mono">2.4.1-1ubuntu0.1&#43;esm1</td><td>noble-apps-security</td><td><span class="tag">esm</span> </td></tr>
+</table></div>
+<h3>Other (2)</h3>
+<div class="scroll"><table>
+<tr><th>Package</th><th>Installed</th><th>Candidate</th><th>Suite</th><th></th></tr>
+<tr><td class="mono">linux-image-6.8.0-92-generic</td><td class="mono">(new)</td><td class="mono">6.8.0-92.92</td><td>noble-updates</td><td></td></tr>
+<tr><td class="mono">tzdata</td><td class="mono">2026a-0ubuntu0.24.04</td><td class="mono">2026b-0ubuntu0.24.04</td><td>noble-updates</td><td><span class="tag">phased</span> </td></tr>
+</table></div>
+
+<h2>Suggested commands</h2>
+<pre>sudo apt-get install --only-upgrade libssl3t64 openssl python3-example
+sudo apt-get update &amp;&amp; sudo apt-get dist-upgrade  # all pending updates for this release, including new kernels; doesn&#39;t change release
+sudo reboot
+</pre>
+
+<h2>Warnings</h2>
+<ul class="warnings">
+<li>epss: feed unavailable, using cached scores from 2026-10-20</li>
+</ul>
+
+<footer class="muted">aptwatch test on web01</footer>
+</main>
+</body>
+</html>
+
