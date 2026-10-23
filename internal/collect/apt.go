@@ -17,7 +17,8 @@ import (
 
 const AptListsDir = "/var/lib/apt/lists"
 
-// Origin is one "Origin:Version/Suite" label from an apt Inst line.
+// Origin is one "Origin:Version/Suite" label from an apt Inst line. apt
+// writes "Origin:Suite" when the repository's Release file has no Version.
 type Origin struct {
 	Origin  string `json:"origin"`
 	Version string `json:"version,omitempty"`
@@ -25,8 +26,11 @@ type Origin struct {
 }
 
 func (o Origin) String() string {
-	if o.Suite == "" {
+	switch {
+	case o.Suite == "":
 		return o.Origin
+	case o.Version == "":
+		return o.Origin + ":" + o.Suite
 	}
 	return o.Origin + ":" + o.Version + "/" + o.Suite
 }
@@ -150,7 +154,7 @@ func parseInst(s string) (Update, error) {
 			o.Suite = suite
 			o.Origin, o.Version, _ = cutLast(left, ":")
 		} else {
-			o.Origin = l
+			o.Origin, o.Suite, _ = cutLast(l, ":")
 		}
 		u.Origins = append(u.Origins, o)
 		u.Security = u.Security || IsSecurityOrigin(o)

@@ -193,3 +193,15 @@ func TestThirdParty(t *testing.T) {
 		t.Error("mixed source skipped")
 	}
 }
+
+func TestJoin(t *testing.T) {
+	for _, tc := range []struct{ a, b, want string }{
+		{"", "known", "known"},
+		{"Use-after-free.", "known to be exploited", "Use-after-free. Known to be exploited."},
+		{"Exploited in the wild…", "known to be exploited", "Exploited in the wild… Known to be exploited."},
+	} {
+		if got := join(tc.a, tc.b); got != tc.want {
+			t.Errorf("join(%q, %q) = %q, want %q", tc.a, tc.b, got, tc.want)
+		}
+	}
+}

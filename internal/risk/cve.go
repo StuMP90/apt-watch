@@ -269,5 +269,10 @@ func join(a, b string) string {
 	case b == "":
 		return a
 	}
-	return strings.TrimRight(a, ". ") + ". " + strings.ToUpper(b[:1]) + b[1:] + "."
+	a = strings.TrimRight(a, ". ")
+	sep := ". "
+	if strings.HasSuffix(a, "…") { // a truncated description
+		sep = " "
+	}
+	return a + sep + strings.ToUpper(b[:1]) + b[1:] + "."
 }

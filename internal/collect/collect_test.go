@@ -60,6 +60,7 @@ func TestParseSimulationMixed(t *testing.T) {
 		{"google-chrome-stable", "amd64", "140.0.1-1", "141.0.2-1", false, false, 1},
 		{"libgnutls30", "amd64", "3.7.9-2+deb12u3", "3.7.9-2+deb12u4", true, false, 1},
 		{"localpkg", "amd64", "1.0", "1.1", false, false, 1},
+		{"examplepkg", "amd64", "2.0-1", "2.1-1", false, false, 1},
 	}
 	if len(sim.Updates) != len(want) {
 		t.Fatalf("got %d updates, want %d: %+v", len(sim.Updates), len(want), sim.Updates)
@@ -73,6 +74,9 @@ func TestParseSimulationMixed(t *testing.T) {
 	}
 	if o := sim.Updates[4].Origins[0]; o.Origin != "Google LLC" || o.Version != "1.0" || o.Suite != "stable" {
 		t.Errorf("origin with space parsed as %+v", o)
+	}
+	if o := sim.Updates[7].Origins[0]; o.Origin != "Example" || o.Version != "" || o.Suite != "stable" || o.String() != "Example:stable" {
+		t.Errorf("origin without version parsed as %+v", o)
 	}
 	if o := sim.Updates[0].Origins[1]; o.String() != "Ubuntu:24.04/noble-security" {
 		t.Errorf("origin String() = %q", o.String())
