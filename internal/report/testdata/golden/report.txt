@@ -1,21 +1,24 @@
-web01: 1 CRITICAL, 1 HIGH, 2 MEDIUM, 1 LOW — 5 updates pending (3 security, 1 phased) — reboot required (3d)
+web01: 1 CRITICAL, 3 HIGH, 2 MEDIUM, 3 LOW — 5 updates pending (3 security, 1 phased) — reboot required (3d)
 ==============================================================================
 
-Host       web01
-OS         Ubuntu 24.04.3 LTS (security support until 2029-05-31; ESM with Ubuntu Pro until 2034-04-30)
-Kernel     6.8.0-90-generic (newest installed: 6.8.0-91-generic)
-Reboot     required since 2026-10-19 06:00 (linux-image-6.8.0-91-generic, libc6)
-Apt lists  updated 4d ago
-CVE data   ubuntu-cve-tracker, updated 5h ago (+KEV, EPSS)
-           14 CVEs with no fix yet affect 6 installed source packages: zlib (5), example (4), imagelib (2), and 3 more
-Checked    2026-10-22 06:00 UTC by aptwatch test
+Host            web01
+OS              Ubuntu 24.04.3 LTS (security support until 2029-05-31; ESM with Ubuntu Pro until 2034-04-30)
+Kernel          6.8.0-90-generic (newest installed: 6.8.0-91-generic)
+Livepatch       applied (patch 118.1)
+Reboot          required since 2026-10-19 06:00 (linux-image-6.8.0-91-generic, libc6)
+Restart needed  dbus.service, example.service
+Held            example-server (security update 1.4-2ubuntu0.2 held back), example-tools (update 2.0-1ubuntu0.1 held back), example-legacy
+Apt lists       updated 4d ago
+CVE data        ubuntu-cve-tracker, updated 5h ago (+KEV, EPSS)
+                14 CVEs with no fix yet affect 6 installed source packages: zlib (5), example (4), imagelib (2), and 3 more
+Checked         2026-10-22 06:00 UTC by aptwatch test
 
 Changes since last run
   ESCALATED  [CRITICAL] CVE-2026-10001 in openssl: fix available
   NEW        [HIGH]     2 CVEs in example: fix available
   RESOLVED   [HIGH]     CVE-2026-09999 in sudo: fix available
 
-Findings (5)
+Findings (9)
   CRITICAL  CVE-2026-10001 in openssl: fix available — since 2026-10-13 (9d)
             Remote code execution in the TLS handshake <and> heap overflow.
             Packages: libssl3t64, openssl
@@ -24,9 +27,21 @@ Findings (5)
             Packages: libexample1, libexample-dev, libexample-doc, libexample-tools, libexample-utils, python3-example, example-bin, example-common, and 2 more
             CVE-2026-10002 (medium, EPSS 12%) https://ubuntu.com/security/CVE-2026-10002
             CVE-2026-10003 (low)
+  HIGH      Security update for example-server (1.4-2ubuntu0.2) is held back
+            The package is on hold (apt-mark hold), so apt won't upgrade it
+            Packages: example-server
+  HIGH      example.service is running replaced code and needs a restart
+            Uses deleted /usr/lib/x86_64-linux-gnu/libssl.so.3
+            Packages: libssl3t64
+            CVE-2026-09998 (high) https://ubuntu.com/security/CVE-2026-09998
   MEDIUM    Reboot required — since 2026-10-19 (3d)
   MEDIUM    apt lists last updated 4 days ago
             Run apt-get update, or check the apt-daily timer.
+  LOW       Newer kernel installed but not running
+            Running 6.8.0-90-generic, newest installed 6.8.0-91-generic; Livepatch has patched the running kernel (patch 118.1)
+  LOW       dbus.service is running replaced code and needs a restart
+            Uses deleted /usr/lib/x86_64-linux-gnu/libexpat.so.1.9.1
+            Packages: libexpat1
   LOW       CVE-2026-10004 in zlib: no fix yet — first seen 2026-09-22
             CVE-2026-10004 (low)
 
@@ -55,6 +70,7 @@ Pending updates (5)
 Suggested commands
   sudo apt-get install --only-upgrade libssl3t64 openssl python3-example
   sudo apt-get update && sudo apt-get dist-upgrade  # all pending updates for this release, including new kernels; doesn't change release
+  sudo apt-mark unhold example-server && sudo apt-get install --only-upgrade example-server  # if the hold is no longer needed
   sudo reboot
 
 Warnings

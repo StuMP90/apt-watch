@@ -205,3 +205,41 @@ func TestJoin(t *testing.T) {
 		}
 	}
 }
+
+func TestRestartEscalation(t *testing.T) {
+	inv := testInventory()
+	inv.System.Restarts = []collect.Restart{
+		{Unit: "old.service", Files: []string{"/usr/lib/libfoo.so.1"}, Packages: []collect.RestartPkg{{Name: "libfoo1", Previous: "0.9-1"}}},
+		{Unit: "recent.service", Files: []string{"/usr/lib/libfoo.so.1"}, Packages: []collect.RestartPkg{{Name: "libfoo1", Previous: "1.0-0+b1"}}},
+		{Unit: "unknown.service", Files: []string{"/usr/lib/libfoo.so.1"}, Packages: []collect.RestartPkg{{Name: "libfoo1"}}},
+		{Unit: "bar.service", Files: []string{"/usr/bin/bar"}, Packages: []collect.RestartPkg{{Name: "bar", Previous: "1.0-1"}}},
+	}
+	db := testDB()
+	db.Advisories["foo"] = append(db.Advisories["foo"], vulndb.Advisory{CVE: "CVE-10", Fixed: "1.0-0", Priority: "medium"})
+	db.Advisories["bar"] = append(db.Advisories["bar"], vulndb.Advisory{CVE: "CVE-11", Fixed: "1.5-1", Priority: "low"})
+	db.KEV["CVE-11"] = time.Time{}
+
+	fs := AddCVEFindings(Evaluate(inv, DefaultPolicy(), now), inv, db, DefaultPolicy(), now)
+	got := map[string]Finding{}
+	for _, f := range fs {
+		got[f.Key] = f
+	}
+	for unit, want := range map[string]struct {
+		sev  Severity
+		cves []string
+	}{
+		"old.service":     {High, []string{"CVE-2"}}, // CVE-2 (critical) fixed in 1.0-0; CVE-10 is only medium
+		"recent.service":  {Low, nil},                // upgraded from a version that had the fix
+		"unknown.service": {Low, nil},
+		"bar.service":     {High, []string{"CVE-11"}}, // in KEV
+	} {
+		f := got["service-restart-needed:"+unit]
+		var ids []string
+		for _, c := range f.CVEs {
+			ids = append(ids, c.ID)
+		}
+		if f.Severity != want.sev || !slices.Equal(ids, want.cves) {
+			t.Errorf("%s: got %v %v, want %v %v", unit, f.Severity, ids, want.sev, want.cves)
+		}
+	}
+}

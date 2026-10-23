@@ -230,3 +230,61 @@ func TestHighestAndAtLeast(t *testing.T) {
 		t.Errorf("AtLeast(low) found %d, want 2", n)
 	}
 }
+
+func TestEvaluateKernelLivepatch(t *testing.T) {
+	k := collect.Kernel{Running: "6.8.0-90-generic", Newest: "6.8.0-91-generic"}
+	for name, tc := range map[string]struct {
+		lp     *collect.Livepatch
+		sev    Severity
+		detail string
+	}{
+		"applied":          {&collect.Livepatch{State: "applied", Version: "118.1"}, Low, "; Livepatch has patched the running kernel (patch 118.1)"},
+		"nothing to apply": {&collect.Livepatch{State: "nothing-to-apply"}, Medium, ""},
+		"no livepatch":     {nil, Medium, ""},
+	} {
+		f := systemFindings(collect.System{Kernel: k, Livepatch: tc.lp}, DefaultPolicy())[KindKernel]
+		if want := "Running 6.8.0-90-generic, newest installed 6.8.0-91-generic" + tc.detail; f.Severity != tc.sev || f.Detail != want {
+			t.Errorf("%s: got %v, %q; want %v, %q", name, f.Severity, f.Detail, tc.sev, want)
+		}
+	}
+}
+
+func TestEvaluateRestarts(t *testing.T) {
+	sys := collect.System{Restarts: []collect.Restart{{
+		Unit:     "nginx.service",
+		Files:    []string{"/usr/lib/x86_64-linux-gnu/libssl.so.3", "/usr/lib/x86_64-linux-gnu/libcrypto.so.3"},
+		Packages: []collect.RestartPkg{{Name: "libssl3", Previous: "3.0.17-1~deb12u2"}},
+	}}}
+	f, ok := systemFindings(sys, DefaultPolicy())[KindRestart]
+	if !ok {
+		t.Fatal("no restart finding")
+	}
+	if f.Key != "service-restart-needed:nginx.service" || f.Severity != Low || !f.FixAvail ||
+		f.Detail != "Uses deleted /usr/lib/x86_64-linux-gnu/libssl.so.3, /usr/lib/x86_64-linux-gnu/libcrypto.so.3" ||
+		len(f.Packages) != 1 || f.Packages[0] != (PkgRef{Name: "libssl3", Installed: "3.0.17-1~deb12u2"}) {
+		t.Errorf("got %+v", f)
+	}
+}
+
+func TestEvaluateHeld(t *testing.T) {
+	sys := collect.System{Held: []collect.Held{
+		{Package: "openssl", Installed: "3.0.17-1~deb12u2", Candidate: "3.0.17-1~deb12u3", Suites: []string{"bookworm-security"}, Security: true},
+		{Package: "nginx", Installed: "1.22.1-9", Candidate: "1.22.1-9+deb12u1", Suites: []string{"bookworm-updates"}},
+		{Package: "zsh", Installed: "5.9-4+b6"}, // nothing held back
+	}}
+	inv := &collect.Inventory{Simulation: &collect.Simulation{}, System: sys}
+	got := map[string]Finding{}
+	for _, f := range Evaluate(inv, DefaultPolicy(), now) {
+		got[f.Key] = f
+	}
+	if len(got) != 2 {
+		t.Errorf("got %d findings, want 2: %v", len(got), got)
+	}
+	if f := got["held-security-update:openssl"]; f.Severity != High || f.Kind != KindHeldSecurity || !strings.Contains(f.Title, "held back") ||
+		f.Packages[0].Origin != "bookworm-security" {
+		t.Errorf("openssl: %+v", f)
+	}
+	if f := got["held-update:nginx"]; f.Severity != Info || f.Kind != KindHeld {
+		t.Errorf("nginx: %+v", f)
+	}
+}

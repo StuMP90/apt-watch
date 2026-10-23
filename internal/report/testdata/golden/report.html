@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="aptwatch test">
-<title>web01: 1 CRITICAL, 1 HIGH, 2 MEDIUM, 1 LOW — 5 updates pending (3 security, 1 phased) — reboot required (3d)</title>
+<title>web01: 1 CRITICAL, 3 HIGH, 2 MEDIUM, 3 LOW — 5 updates pending (3 security, 1 phased) — reboot required (3d)</title>
 <style>
 :root {
   --bg: #ffffff; --fg: #1f2328; --muted: #656d76; --line: #d0d7de; --panel: #f6f8fa;
@@ -61,7 +61,7 @@ footer { margin-top: 40px; font-size: 0.85em; }
 <body>
 <main>
 <div class="top critical">
-<h1>web01: 1 CRITICAL, 1 HIGH, 2 MEDIUM, 1 LOW — 5 updates pending (3 security, 1 phased) — reboot required (3d)</h1>
+<h1>web01: 1 CRITICAL, 3 HIGH, 2 MEDIUM, 3 LOW — 5 updates pending (3 security, 1 phased) — reboot required (3d)</h1>
 <div class="muted">Thursday 22 October 2026, 06:00 UTC</div>
 </div>
 
@@ -70,7 +70,10 @@ footer { margin-top: 40px; font-size: 0.85em; }
 <tr><th>Host</th><td>web01</td></tr>
 <tr><th>OS</th><td>Ubuntu 24.04.3 LTS (security support until 2029-05-31; ESM with Ubuntu Pro until 2034-04-30)</td></tr>
 <tr><th>Kernel</th><td>6.8.0-90-generic (newest installed: 6.8.0-91-generic)</td></tr>
+<tr><th>Livepatch</th><td>applied (patch 118.1)</td></tr>
 <tr><th>Reboot</th><td>required since 2026-10-19 06:00 (linux-image-6.8.0-91-generic, libc6)</td></tr>
+<tr><th>Restart needed</th><td>dbus.service, example.service</td></tr>
+<tr><th>Held</th><td>example-server (security update 1.4-2ubuntu0.2 held back), example-tools (update 2.0-1ubuntu0.1 held back), example-legacy</td></tr>
 <tr><th>Apt lists</th><td>updated 4d ago</td></tr>
 <tr><th>CVE data</th><td>ubuntu-cve-tracker, updated 5h ago (&#43;KEV, EPSS)<br><span class="muted">14 CVEs with no fix yet affect 6 installed source packages: zlib (5), example (4), imagelib (2), and 3 more</span></td></tr>
 <tr><th>Checked</th><td>2026-10-22 06:00 UTC by aptwatch test</td></tr>
@@ -83,7 +86,7 @@ footer { margin-top: 40px; font-size: 0.85em; }
 <tr><td class="tag resolved">RESOLVED</td><td><span class="badge high">HIGH</span></td><td>CVE-2026-09999 in sudo: fix available</td></tr>
 </table></div>
 
-<h2>Findings (5)</h2>
+<h2>Findings (9)</h2>
 <ul class="findings">
 <li>
 <span class="badge critical">CRITICAL</span>
@@ -104,6 +107,21 @@ footer { margin-top: 40px; font-size: 0.85em; }
 </ul>
 </li>
 <li>
+<span class="badge high">HIGH</span>
+<span class="title">Security update for example-server (1.4-2ubuntu0.2) is held back</span>
+<p class="detail">The package is on hold (apt-mark hold), so apt won&#39;t upgrade it</p>
+<div class="detail muted">Packages: <span class="mono">example-server</span></div>
+</li>
+<li>
+<span class="badge high">HIGH</span>
+<span class="title">example.service is running replaced code and needs a restart</span>
+<p class="detail">Uses deleted /usr/lib/x86_64-linux-gnu/libssl.so.3</p>
+<div class="detail muted">Packages: <span class="mono">libssl3t64</span></div>
+<ul class="cves">
+<li><span class="mono"><a href="https://ubuntu.com/security/CVE-2026-09998">CVE-2026-09998</a></span> <span>(high)</span></li>
+</ul>
+</li>
+<li>
 <span class="badge medium">MEDIUM</span>
 <span class="title">Reboot required</span> <span class="muted">— since 2026-10-19 (3d)</span>
 </li>
@@ -111,6 +129,17 @@ footer { margin-top: 40px; font-size: 0.85em; }
 <span class="badge medium">MEDIUM</span>
 <span class="title">apt lists last updated 4 days ago</span>
 <p class="detail">Run apt-get update, or check the apt-daily timer.</p>
+</li>
+<li>
+<span class="badge low">LOW</span>
+<span class="title">Newer kernel installed but not running</span>
+<p class="detail">Running 6.8.0-90-generic, newest installed 6.8.0-91-generic; Livepatch has patched the running kernel (patch 118.1)</p>
+</li>
+<li>
+<span class="badge low">LOW</span>
+<span class="title">dbus.service is running replaced code and needs a restart</span>
+<p class="detail">Uses deleted /usr/lib/x86_64-linux-gnu/libexpat.so.1.9.1</p>
+<div class="detail muted">Packages: <span class="mono">libexpat1</span></div>
 </li>
 <li>
 <span class="badge low">LOW</span>
@@ -168,6 +197,7 @@ footer { margin-top: 40px; font-size: 0.85em; }
 <h2>Suggested commands</h2>
 <pre>sudo apt-get install --only-upgrade libssl3t64 openssl python3-example
 sudo apt-get update &amp;&amp; sudo apt-get dist-upgrade  # all pending updates for this release, including new kernels; doesn&#39;t change release
+sudo apt-mark unhold example-server &amp;&amp; sudo apt-get install --only-upgrade example-server  # if the hold is no longer needed
 sudo reboot
 </pre>
 

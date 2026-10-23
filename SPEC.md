@@ -157,7 +157,7 @@ Parse the RFC 822-style stanzas. For each package whose `Status` is `install ok 
 | `Source` | Source package name and version. Format is `name` or `name (version)`; if absent, use `Package`/`Version`. **CVE data is keyed by source package.** |
 | `Status` first word `hold` | Held package |
 
-Also read held packages from `apt-mark showhold` to be safe.
+`apt-mark showhold` reads the same selection state, so it isn't run.
 
 ### 5.3 Available updates: `apt-get -s dist-upgrade`
 
@@ -177,9 +177,9 @@ For each `Inst`, record: package, old version (if present), candidate version, a
 - **ESM**: origin `UbuntuESM` / `UbuntuESMApps`. Mark these "requires Ubuntu Pro".
 - **Phased**: updates come from the run that includes phased updates. Those the normal run defers are marked phased, so they aren't reported as overdue: the ones listed under `The following upgrades have been deferred due to phasing:` (apt 2.8 and later), and any it doesn't install at all. apt 2.4 (Ubuntu 22.04) has no phasing header and lists phased updates as kept back, so only the second test finds them there.
 - **Kept back**: also run `apt-get -s upgrade` and compare. Packages in `dist-upgrade` but not in `upgrade` are "needs new dependencies".
-- **Held** packages that have a candidate are reported, at higher severity if the candidate is a security update.
+- **Held** packages don't appear in the simulation, so `apt-cache policy <pkg>:<arch>…` is run once for all of them. A held package whose candidate is newer than the installed version is reported as `held-security-update` if any suite offering the candidate is a security suite, otherwise as `held-update`. A held package with no newer candidate isn't a finding, but is listed in the report's System section.
 
-`apt-cache policy <pkg>` is only used as a fallback for unclear cases (e.g. to get the origin for a package that the simulation doesn't show).
+`apt-cache policy` is otherwise only used as a fallback for unclear cases (e.g. to get the origin for a package that the simulation doesn't show).
 
 ### 5.3a Package repositories: `/var/lib/apt/lists`
 
@@ -214,8 +214,8 @@ The distribution's CVE data doesn't cover third-party builds (§6.4), but their 
 | OS end-of-life date | `/usr/share/distro-info/{debian,ubuntu}.csv` (package `distro-info-data`, present by default). Fall back to a table built into the binary. | `os-eol` (approaching / passed). For Ubuntu, also note the ESM date. |
 | Reboot required | `/run/reboot-required` (+ `.pkgs`); file mtime gives age | `reboot-required` |
 | Running vs newest installed kernel | `uname -r` vs installed `linux-image-*` packages | `kernel-not-running` |
-| Services using outdated libraries | `needrestart -b -r l` if installed (parse `NEEDRESTART-SVC:` / `NEEDRESTART-KSTA:`). Otherwise scan `/proc/*/maps` for mapped files marked `(deleted)` under `/usr/lib` or `/lib` and map PID → systemd unit using `/proc/PID/cgroup`. | `service-restart-needed` |
-| Livepatch (Ubuntu, optional) | `canonical-livepatch status --format json` if present | Lowers the severity of `kernel-not-running` when the patch is applied |
+| Services using outdated libraries | Scan `/proc/*/maps` for executable mappings marked `(deleted)` under `/usr`, `/lib*`, `/bin` or `/sbin`, and map each PID to its systemd service from `/proc/PID/cgroup` (cgroup v2, or v1's `name=systemd` hierarchy). Processes in `user.slice`, scopes and containers are left out. The deleted files are mapped to packages through `/var/lib/dpkg/info/*.list` (trying both `/lib` and `/usr/lib` spellings, for merged `/usr`), and each package's previous version is the oldest it was upgraded from in `/var/log/dpkg.log` and `dpkg.log.1`. Without root most processes' maps can't be read, which gives a warning. `needrestart` isn't used: it isn't installed by default, and its batch output doesn't name the libraries, which escalation needs. | `service-restart-needed`, one per service |
+| Livepatch (Ubuntu, optional) | `canonical-livepatch status --format json` if present; the entry for the running kernel. A missing, disabled or failing client is ignored. | Lowers `kernel-not-running` to Low when its state is `applied` |
 | Ubuntu Pro status | `pro status --format json` if present | Decides whether ESM fixes count as "fix available" or "fix requires Pro" |
 
 All external commands run with an explicit argv (never through a shell), `LC_ALL=C`, a timeout, and a minimal environment.
@@ -332,9 +332,10 @@ type Finding struct {
 | `security-update-pending` (security update with no matched CVE) | Medium | After `escalate_after` → High |
 | `update-pending` (non-security) | Info | — |
 | `held-security-update` | High | — |
+| `held-update` (non-security) | Info | — |
 | `reboot-required` | Medium | After 7d → High |
 | `kernel-not-running` | Medium | Livepatch applied → Low |
-| `service-restart-needed` | Low | Service uses a library with a KEV/High CVE fix → High |
+| `service-restart-needed` | Low | The upgrade the service is waiting on fixed a CVE that is in KEV or has high/critical priority (fixed version above the package's previous version, at or below the installed one) → High, with those CVEs listed |
 | `os-eol` | Medium within 90d of EOL; High after EOL | Ubuntu with Pro/ESM active → Medium |
 | `stale-apt-lists` | Medium | — |
 | `cve-fixed-third-party` (one per third-party source, §6.4) | Info: listed in its own report section, not in Findings | — |
@@ -407,7 +408,7 @@ Resolved entries are removed after `state.keep_resolved` (default 30d).
 7. **System**: reboot, kernel, services to restart, held packages, EOL.
 8. **Suppressed findings** (full reports only).
 9. **Warnings**: data sources, stale lists, config problems.
-10. **Suggested commands**, e.g. `apt-get install --only-upgrade openssl libssl3`, `systemctl restart nginx`.
+10. **Suggested commands**, e.g. `apt-get install --only-upgrade openssl libssl3`; for a held security update, `apt-mark unhold` followed by the install; `systemctl restart nginx.service` when no reboot is needed. Services that can't safely be restarted in place (D-Bus, logind, display managers, gettys, user managers) are left out of `systemctl restart` and covered by a `reboot` suggestion instead.
 
 ### 9.2 Formats
 
@@ -520,7 +521,10 @@ internal/collect/
     apt.go              apt-get update, -s dist-upgrade/upgrade parsing, holds
     repos.go            package → repository from /var/lib/apt/lists (third-party detection)
     changelog.go        third-party changelogs: installed, and candidates via apt-get download + dpkg-deb
-    system.go           os-release, distro-info EOL, kernel, reboot, needrestart/proc scan, livepatch, pro
+    system.go           os-release, distro-info EOL, kernel, reboot, pro
+    restart.go          services running deleted code: /proc maps and cgroup scan, file owners, dpkg.log
+    livepatch.go        canonical-livepatch status
+    held.go             held packages and their candidates via apt-cache policy
 internal/vulndb/
     vulndb.go           Open: sources for the host, DB, Advisory
     fetch.go            conditional download, size limits, atomic replace
@@ -542,7 +546,7 @@ testdata/               dpkg status files, apt-get -s outputs, vuln data fixture
 
 ## 13. Testing
 
-- **Unit tests**: `debver` with Debian's own comparison test vectors; parsers fed synthetic `dpkg/status` and `apt-get -s` outputs in the format each supported release's apt version prints (2.4 on Ubuntu 22.04, 2.6 on Debian 12, 2.8 on Ubuntu 24.04, 3.0 on Debian 13, 3.1 on Ubuntu 26.04), including phased updates, Debian and Ubuntu origin labels, ESM and each release's kernel package names; matching truth tables; the system rules (reboot, kernel, end of life, stale lists) and risk escalation; state diffing.
+- **Unit tests**: `debver` with Debian's own comparison test vectors; parsers fed synthetic `dpkg/status` and `apt-get -s` outputs in the format each supported release's apt version prints (2.4 on Ubuntu 22.04, 2.6 on Debian 12, 2.8 on Ubuntu 24.04, 3.0 on Debian 13, 3.1 on Ubuntu 26.04), including phased updates, Debian and Ubuntu origin labels, ESM and each release's kernel package names; matching truth tables; the system rules (reboot, kernel, end of life, stale lists) and risk escalation; the service-restart scan on a synthetic `/proc` tree (cgroup v1 and v2, merged `/usr`, user sessions and containers left out, unreadable processes), `apt-cache policy` parsing for held packages, Livepatch status, and restart escalation by CVE; state diffing.
 - **Golden-file tests** for each report format.
 - **`aptwatch cve`**: every status, the fix command, kernels and reboots, and the formats, on synthetic packages and advisories (never a real host's package list). First-seen dates: seeding, later dating, reseeding and the KEV fallback.
 - **Report tests**: every format carries the same sections; hostile package text is escaped in HTML.
@@ -560,7 +564,7 @@ testdata/               dpkg status files, apt-get -s outputs, vuln data fixture
 | **M0** | Repo, Go module, `debver` package, safe exec helper | `debver` passes the Debian test vectors |
 | **M1** | **End-to-end slice.** Collection (dpkg, apt simulation, reboot, kernel, EOL), basic findings and severities, state + diff, text report, `run` / `scan` commands | On the dev machine, `aptwatch run` lists pending security updates; a second run shows no new changes |
 | **M2** | Vuln data: spike to confirm source formats and sizes, then cache, Debian tracker, OSV Ubuntu (including `Ubuntu:Pro:*`), KEV, EPSS, matching | Results agree with `pro security-status` on a Pro host; reports run on a Debian host (both done) |
-| **M3** | Third-party repository detection and changelog CVEs (done), full risk engine (escalation, restarts via needrestart), ignore rules, exit codes | Golden tests pass |
+| **M3** | Third-party repository detection and changelog CVEs, full risk engine (escalation, service restarts, Livepatch, held packages), ignore rules, exit codes (done) | Golden tests pass |
 | **M4** | Report formats: `text`, `html`, `json` via `--format` / `report.format` (done; notifications removed) | `run --format html > page.html` gives a self-contained page; report tests pass |
 | **M4a** | `aptwatch cve` (§3.1) and Debian first-seen publish dates (§6.2) (done) | `aptwatch cve CVE-ID` gives the right status and exit code on the dev machine; unit tests pass |
 | **M4b** | Ignore rules (§7.3), `db update` / `db status`, `config check`, `--nagios` (done) | Unit tests pass; an ignore rule on the dev machine moves its finding to "Suppressed findings" |

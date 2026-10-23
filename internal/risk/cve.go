@@ -30,8 +30,44 @@ func AddCVEFindings(fs []Finding, inv *collect.Inventory, db *vulndb.DB, p Polic
 		return f.Kind == KindSecurityUpdate && covered[f.Source]
 	})
 	out = append(out, cves...)
+	escalateRestarts(out, inv, db)
 	Sort(out)
 	return out
+}
+
+// escalateRestarts raises a service-restart finding to High when the
+// upgrade it is waiting on fixed a high or critical CVE, or one in KEV:
+// the service is still running the vulnerable code. A package's Installed
+// version on the finding is the one it was upgraded from; with none known
+// the finding is left alone.
+func escalateRestarts(fs []Finding, inv *collect.Inventory, db *vulndb.DB) {
+	srcOf := collect.SourceOf(inv.Packages)
+	srcs := installedSources(inv)
+	for i := range fs {
+		f := &fs[i]
+		if f.Kind != KindRestart {
+			continue
+		}
+		for _, p := range f.Packages {
+			src := srcOf[p.Name]
+			s := srcs[src]
+			if p.Installed == "" || s == nil {
+				continue
+			}
+			for _, a := range db.Advisories[src] {
+				_, kev := db.KEV[a.CVE]
+				serious := kev || a.Priority == "high" || a.Priority == "critical"
+				if !serious || a.Fixed == "" || debver.Compare(p.Installed, a.Fixed) >= 0 || debver.Compare(s.installed, a.Fixed) < 0 {
+					continue
+				}
+				ref := CVERef{ID: a.CVE, Priority: a.Priority, Fixed: a.Fixed, URL: db.URL(a.CVE), EPSS: db.EPSS[a.CVE], KEV: kev}
+				if !slices.ContainsFunc(f.CVEs, func(c CVERef) bool { return c.ID == a.CVE }) {
+					f.CVEs = append(f.CVEs, ref)
+				}
+				f.Severity = High
+			}
+		}
+	}
 }
 
 // srcPkg is one installed source package.

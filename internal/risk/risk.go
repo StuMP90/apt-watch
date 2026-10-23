@@ -19,6 +19,9 @@ const (
 	KindOSEOL          = "os-eol"
 	KindStaleLists     = "stale-apt-lists"
 	KindThirdParty     = "third-party-packages"
+	KindRestart        = "service-restart-needed"
+	KindHeldSecurity   = "held-security-update"
+	KindHeld           = "held-update"
 
 	KindCVEFixAvailable   = "cve-fix-available"
 	KindCVEFixUnreachable = "cve-fix-unreachable"
@@ -115,13 +118,24 @@ func Evaluate(inv *collect.Inventory, p Policy, now time.Time) []Finding {
 		out = append(out, f)
 	}
 	if k := sys.Kernel; k.Newest != "" && k.Running != "" && k.Newest != k.Running {
-		out = append(out, Finding{
+		f := Finding{
 			Key: KindKernel + ":" + k.Newest, Kind: KindKernel, Severity: Medium,
 			Title:    "Newer kernel installed but not running",
 			Detail:   fmt.Sprintf("Running %s, newest installed %s", k.Running, k.Newest),
 			FixAvail: true,
-		})
+		}
+		if lp := sys.Livepatch; lp.Applied() {
+			// Livepatch fixes the running kernel's high and critical CVEs.
+			f.Severity = Low
+			f.Detail += "; Livepatch has patched the running kernel"
+			if lp.Version != "" {
+				f.Detail += " (patch " + lp.Version + ")"
+			}
+		}
+		out = append(out, f)
 	}
+	out = append(out, restartFindings(sys.Restarts)...)
+	out = append(out, heldFindings(sys.Held)...)
 	if e := sys.EOL; e != nil {
 		left := e.SecurityEnd.Sub(now)
 		name := sys.OS.PrettyName
@@ -206,6 +220,50 @@ func updateFindings(inv *collect.Inventory) []Finding {
 			notes = append(notes, "phased rollout: apt is holding it back on this host for now")
 		}
 		f.Detail = strings.Join(notes, "; ")
+		out = append(out, f)
+	}
+	return out
+}
+
+// restartFindings reports each service still running replaced code, one
+// finding per unit. AddCVEFindings raises them when the upgrade fixed a
+// serious CVE.
+func restartFindings(rs []collect.Restart) []Finding {
+	var out []Finding
+	for _, r := range rs {
+		f := Finding{
+			Key: KindRestart + ":" + r.Unit, Kind: KindRestart, Severity: Low, FixAvail: true,
+			Title:  fmt.Sprintf("%s is running replaced code and needs a restart", r.Unit),
+			Detail: "Uses deleted " + strings.Join(r.Files, ", "),
+		}
+		for _, p := range r.Packages {
+			f.Packages = append(f.Packages, PkgRef{Name: p.Name, Installed: p.Previous})
+		}
+		out = append(out, f)
+	}
+	return out
+}
+
+// heldFindings reports held packages with an update apt won't install.
+func heldFindings(held []collect.Held) []Finding {
+	var out []Finding
+	for _, h := range held {
+		if h.Candidate == "" {
+			continue
+		}
+		f := Finding{
+			Packages: []PkgRef{{Name: h.Package, Installed: h.Installed, Candidate: h.Candidate, Origin: strings.Join(h.Suites, ", ")}},
+			FixAvail: true,
+			Detail:   "The package is on hold (apt-mark hold), so apt won't upgrade it",
+		}
+		if h.Security {
+			f.Kind, f.Severity = KindHeldSecurity, High
+			f.Title = fmt.Sprintf("Security update for %s (%s) is held back", h.Package, h.Candidate)
+		} else {
+			f.Kind, f.Severity = KindHeld, Info
+			f.Title = fmt.Sprintf("Update for %s (%s) is held back", h.Package, h.Candidate)
+		}
+		f.Key = f.Kind + ":" + h.Package
 		out = append(out, f)
 	}
 	return out

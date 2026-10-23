@@ -229,6 +229,13 @@ func (r *Report) systemRows() []row {
 		k += " (newest installed: " + sys.Kernel.Newest + ")"
 	}
 	add("Kernel", k)
+	if lp := sys.Livepatch; lp != nil {
+		s := lp.State
+		if lp.Version != "" {
+			s += " (patch " + lp.Version + ")"
+		}
+		add("Livepatch", s)
+	}
 	if sys.Reboot.Required {
 		s := "required"
 		if !sys.Reboot.Since.IsZero() {
@@ -240,6 +247,27 @@ func (r *Report) systemRows() []row {
 		add("Reboot", s)
 	} else {
 		add("Reboot", "not required")
+	}
+	if len(sys.Restarts) > 0 {
+		var units []string
+		for _, rs := range sys.Restarts {
+			units = append(units, rs.Unit)
+		}
+		add("Restart needed", strings.Join(units, ", "))
+	}
+	if len(sys.Held) > 0 {
+		var held []string
+		for _, h := range sys.Held {
+			switch {
+			case h.Security:
+				held = append(held, h.Package+" (security update "+h.Candidate+" held back)")
+			case h.Candidate != "":
+				held = append(held, h.Package+" (update "+h.Candidate+" held back)")
+			default:
+				held = append(held, h.Package)
+			}
+		}
+		add("Held", strings.Join(held, ", "))
 	}
 	if !sys.ListsUpdated.IsZero() {
 		add("Apt lists", "updated "+risk.Age(r.Generated.Sub(sys.ListsUpdated))+" ago")
@@ -459,10 +487,43 @@ func (r *Report) suggestions() []string {
 	if installable > len(sec) {
 		cmds = append(cmds, "sudo apt-get update && sudo apt-get dist-upgrade  # all pending updates for this release, including new kernels; doesn't change release")
 	}
-	if r.System.Reboot.Required || (r.System.Kernel.Newest != "" && r.System.Kernel.Newest != r.System.Kernel.Running) {
+	var held []string
+	for _, h := range r.System.Held {
+		if h.Security {
+			held = append(held, h.Package)
+		}
+	}
+	if len(held) > 0 {
+		cmds = append(cmds, "sudo apt-mark unhold "+strings.Join(held, " ")+" && sudo apt-get install --only-upgrade "+strings.Join(held, " ")+"  # if the hold is no longer needed")
+	}
+	reboot := r.System.Reboot.Required || (r.System.Kernel.Newest != "" && r.System.Kernel.Newest != r.System.Kernel.Running)
+	var restart, unsafe []string
+	for _, rs := range r.System.Restarts {
+		if rebootOnly(rs.Unit) {
+			unsafe = append(unsafe, rs.Unit)
+		} else {
+			restart = append(restart, rs.Unit)
+		}
+	}
+	if len(restart) > 0 && !reboot {
+		cmds = append(cmds, "sudo systemctl restart "+strings.Join(restart, " "))
+	}
+	if reboot {
 		cmds = append(cmds, "sudo reboot")
+	} else if len(unsafe) > 0 {
+		cmds = append(cmds, "sudo reboot  # to restart "+strings.Join(unsafe, ", "))
 	}
 	return cmds
+}
+
+// rebootOnly reports whether a unit can't safely be restarted on a live
+// system: restarting it ends sessions or breaks other services.
+func rebootOnly(unit string) bool {
+	switch strings.TrimSuffix(unit, ".service") {
+	case "dbus", "dbus-broker", "systemd-logind", "gdm", "gdm3", "sddm", "lightdm":
+		return true
+	}
+	return strings.HasPrefix(unit, "getty@") || strings.HasPrefix(unit, "serial-getty@") || strings.HasPrefix(unit, "user@")
 }
 
 func plural(n int) string {

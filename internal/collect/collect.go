@@ -81,6 +81,22 @@ func (h Host) Collect(ctx context.Context) (*Inventory, []string, error) {
 	} else {
 		sys.Kernel.Newest = NewestKernel(pkgs, sys.Kernel.Running)
 	}
+	if sys.OS.ID == "ubuntu" {
+		if sys.Livepatch, err = h.Livepatch(ctx); err != nil {
+			warn("livepatch: %v", err)
+		}
+	}
+	rs, unreadable, err := h.Restarts()
+	if err != nil {
+		warn("service restart check: %v", err)
+	}
+	if unreadable > 0 {
+		warn("service restart check incomplete: can't read the memory maps of %d processes (needs root)", unreadable)
+	}
+	sys.Restarts = rs
+	if sys.Held, err = h.HeldPackages(ctx, pkgs); err != nil {
+		warn("held packages: %v", err)
+	}
 	if sys.ListsUpdated, err = ListsUpdated(h.path(AptListsDir)); err != nil {
 		warn("apt lists: %v", err)
 	}

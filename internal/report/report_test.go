@@ -1,6 +1,7 @@
 package report
 
 import (
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -129,5 +130,26 @@ func TestSuppressed(t *testing.T) {
 	}
 	if !strings.Contains(text.String(), "\nFindings (0)\n  none") {
 		t.Error("text lists the suppressed finding as active")
+	}
+}
+
+func TestSuggestions(t *testing.T) {
+	r := &Report{System: collect.System{
+		Restarts: []collect.Restart{{Unit: "nginx.service"}, {Unit: "dbus.service"}, {Unit: "ssh.service"}},
+		Held:     []collect.Held{{Package: "openssl", Candidate: "3.0.17-1~deb12u3", Security: true}, {Package: "zsh"}},
+	}}
+	want := []string{
+		"sudo apt-mark unhold openssl && sudo apt-get install --only-upgrade openssl  # if the hold is no longer needed",
+		"sudo systemctl restart nginx.service ssh.service",
+		"sudo reboot  # to restart dbus.service",
+	}
+	if got := r.suggestions(); !slices.Equal(got, want) {
+		t.Errorf("got  %q\nwant %q", got, want)
+	}
+
+	r.System.Reboot.Required = true // a reboot restarts everything
+	want = []string{want[0], "sudo reboot"}
+	if got := r.suggestions(); !slices.Equal(got, want) {
+		t.Errorf("with reboot: got %q\nwant %q", got, want)
 	}
 }

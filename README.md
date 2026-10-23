@@ -141,6 +141,8 @@ The first run downloads the vulnerability data, which takes longer. After that i
 
 aptwatch needs root to refresh the apt lists. Without root it skips `apt-get update` and uses the lists it already has. If those are older than `apt.stale_after`, the report says so.
 
+It also needs root to see which services need restarting, because only root can read other processes' memory maps. Without root that check is incomplete, and the report gives a warning (so the exit code is at least 2).
+
 ## Checking specific CVEs
 
 When a CVE is in the news, `aptwatch cve` tells you whether this host is affected and, if it is, what to do. You can give several IDs at once, in any case.
@@ -251,7 +253,7 @@ $ echo $?
 3. **Findings, by severity.** Each one shows the CVEs it covers, KEV (★) and EPSS, how long the fix has been pending, and the command that fixes it.
 4. **Recent CVEs fixed in third-party packages.** These come from the changelogs, so you can see that, for example, last week's PHP CVEs are already patched.
 5. **Pending updates**, security and other.
-6. **System**: whether a reboot is needed, whether the running kernel is the newest one installed, services that need restarting, held packages, and the OS end-of-life date.
+6. **System**: whether a reboot is needed, whether the running kernel is the newest one installed (and, on Ubuntu, whether Livepatch has patched it), services that need restarting, held packages, and the OS end-of-life date.
 7. **Warnings**, such as stale data or a source that failed, with suggested commands.
 
 | Format | Use it for |
@@ -446,12 +448,14 @@ Each finding gets a severity: critical, high, medium, low or info. A CVE fix sta
 
 The other findings have fixed defaults:
 
-- a held security update: high;
+- a held security update: high; any other held update: info;
 - a pending reboot: medium, or high after `reboot_escalate_after`;
+- a newer kernel installed but not running: medium, or low if Livepatch has patched the running kernel;
+- a service still running code that an upgrade replaced: low, or high if that upgrade fixed a high-priority or known-exploited CVE. The report suggests `systemctl restart` for the service, except for services that can't safely be restarted in place, such as D-Bus or a display manager: for those it suggests a reboot;
 - the OS within `eol_warn_before` of end of life: medium, or high once it has reached end of life;
 - a third-party repository that replaces distribution packages: low.
 
-Severities only go up, never down. SPEC.md §7.2 has the full table.
+Escalation only raises a severity, never lowers it. SPEC.md §7.2 has the full table.
 
 ## Vulnerability data
 
@@ -541,7 +545,8 @@ Well covered:
 - The `dpkg/status` and `apt-get -s` parsers, on synthetic output in the format of each supported release's apt version (2.4 to 3.1): phased updates, origins, ESM and kernel package names.
 - CVE matching and statuses, ignore rules, third-party repositories, and the state file's history.
 - The text, HTML and JSON reports, with golden files.
-- The system rules (reboot required, newer kernel not running, end of life, stale apt lists) and the escalation of security updates after `policy.escalate_after`.
+- The system rules (reboot required, newer kernel not running, Livepatch, end of life, stale apt lists) and the escalation of security updates after `policy.escalate_after`.
+- The service-restart check on a synthetic `/proc` tree (cgroup v1 and v2, merged `/usr`, user sessions and containers left out), its escalation by CVE, and held packages from `apt-cache policy` output.
 - Exit codes and the Nagios line.
 - The `run`, `scan` and `cve` commands end to end, on a synthetic Debian 12 host: system files under a temporary directory, a fake `apt-get` and `apt-cache`, and cached vulnerability data. This covers the first and second runs' diffs, `--dry-run` and the exit codes.
 - `db status` and `db update` on the same cached data, including stale feeds, and `config check` with ignore rules, warnings, invalid configs and a config file not owned by root.
@@ -561,7 +566,7 @@ The code is laid out like this:
 | Path | Contents |
 |---|---|
 | `cmd/aptwatch/` | The CLI |
-| `internal/collect` | Installed packages, apt sources, reboot and kernel state, changelogs |
+| `internal/collect` | Installed packages, apt sources, reboot and kernel state, Livepatch, services that need restarting, held packages, changelogs |
 | `internal/vulndb` | Downloading, caching and parsing the vulnerability data |
 | `internal/risk` | Matching, severities, escalation, CVE status |
 | `internal/report` | The text, HTML and JSON output |

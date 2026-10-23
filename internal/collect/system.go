@@ -44,12 +44,15 @@ type Kernel struct {
 
 // System is the collected host state.
 type System struct {
-	Hostname     string    `json:"hostname"`
-	OS           OSRelease `json:"os"`
-	EOL          *EOL      `json:"eol,omitempty"`
-	Reboot       Reboot    `json:"reboot"`
-	Kernel       Kernel    `json:"kernel"`
-	ListsUpdated time.Time `json:"apt_lists_updated"`
+	Hostname     string     `json:"hostname"`
+	OS           OSRelease  `json:"os"`
+	EOL          *EOL       `json:"eol,omitempty"`
+	Reboot       Reboot     `json:"reboot"`
+	Kernel       Kernel     `json:"kernel"`
+	Livepatch    *Livepatch `json:"livepatch,omitempty"`
+	Restarts     []Restart  `json:"restarts,omitempty"`
+	Held         []Held     `json:"held,omitempty"`
+	ListsUpdated time.Time  `json:"apt_lists_updated"`
 }
 
 func ReadOSRelease(path string) (OSRelease, error) {
