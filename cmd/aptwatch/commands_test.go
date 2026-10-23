@@ -89,6 +89,13 @@ func fakeApt(_ context.Context, c runx.Cmd) (runx.Result, error) {
 	return runx.Result{}, fmt.Errorf("unexpected command %s", c.Name)
 }
 
+// trackerMeta is testTracker's cache metadata, as if last checked at the
+// given time.
+func trackerMeta(at time.Time) string {
+	meta, _ := json.Marshal(map[string]any{"url": "https://security-tracker.debian.org/tracker/data/json", "fetched": at, "checked": at, "size": len(testTracker)})
+	return string(meta)
+}
+
 // testHost sets up the synthetic host, its cached vulnerability data and a
 // config, points the commands at them, and returns the config path and
 // the state file.
@@ -106,9 +113,8 @@ func testHost(t *testing.T) (cfgPath, stateFile string) {
 		lists + "/deb.debian.org_debian_dists_bookworm_main_binary-amd64_Packages": "Package: base-files\nVersion: 12.4+deb12u11\n\nPackage: libssl3\nVersion: 3.0.17-1~deb12u2\n\nPackage: openssl\nVersion: 3.0.17-1~deb12u2\n\nPackage: linux-image-6.1.0-41-amd64\nVersion: 6.1.158-1\n",
 	}
 	cache := filepath.Join(dir, "cache")
-	meta, _ := json.Marshal(map[string]any{"url": "https://security-tracker.debian.org/tracker/data/json", "fetched": time.Now(), "checked": time.Now()})
 	files[cache+"/debian-tracker.json"] = testTracker
-	files[cache+"/debian-tracker.json.meta.json"] = string(meta)
+	files[cache+"/debian-tracker.json.meta.json"] = trackerMeta(time.Now())
 	stateFile = filepath.Join(dir, "state.json")
 	cfgPath = filepath.Join(dir, "config.yaml")
 	files[cfgPath] = fmt.Sprintf(`lock_file: %s
@@ -142,12 +148,18 @@ vulndb:
 // execute runs aptwatch with args and returns its output and exit code.
 func execute(t *testing.T, args ...string) (string, int) {
 	t.Helper()
+	out, err := executeErr(args...)
+	return out, code(t, err)
+}
+
+// executeErr runs aptwatch with args and returns its output and error.
+func executeErr(args ...string) (string, error) {
 	root := newRoot()
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetArgs(append(args, "--log-level", "error"))
 	err := root.ExecuteContext(context.Background())
-	return out.String(), code(t, err)
+	return out.String(), err
 }
 
 func decode[T any](t *testing.T, out string) T {

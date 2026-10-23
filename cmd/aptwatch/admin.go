@@ -6,13 +6,11 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"os"
 	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
 
-	"aptwatch/internal/collect"
 	"aptwatch/internal/config"
 	"aptwatch/internal/risk"
 	"aptwatch/internal/vulndb"
@@ -62,7 +60,7 @@ no advisory data could be loaded.`,
 			if err != nil {
 				return err
 			}
-			if err := printFeeds(os.Stdout, cfg, sys, fs, now); err != nil {
+			if err := printFeeds(cmd.OutOrStdout(), cfg, sys, fs, now); err != nil {
 				return err
 			}
 			if len(warnings) > 0 {
@@ -97,11 +95,11 @@ or its last refresh failed.`,
 			}
 			now := time.Now()
 			if asJSON {
-				e := json.NewEncoder(os.Stdout)
+				e := json.NewEncoder(cmd.OutOrStdout())
 				e.SetIndent("", "  ")
 				err = e.Encode(fs)
 			} else {
-				err = printFeeds(os.Stdout, cfg, sys, fs, now)
+				err = printFeeds(cmd.OutOrStdout(), cfg, sys, fs, now)
 			}
 			if err != nil {
 				return err
@@ -121,7 +119,7 @@ or its last refresh failed.`,
 }
 
 func hostOS() (vulndb.OS, error) {
-	o, err := collect.ReadOSRelease("/etc/os-release")
+	o, err := sys.OSRelease()
 	if err != nil {
 		return vulndb.OS{}, err
 	}
@@ -190,11 +188,12 @@ else 0.`,
 			if err != nil {
 				return err
 			}
-			if err := config.CheckPerms(g.config); err != nil {
+			if err := checkPerms(g.config); err != nil {
 				return err
 			}
 			now := time.Now()
-			fmt.Printf("%s: OK\n", g.config)
+			out := cmd.OutOrStdout()
+			fmt.Fprintf(out, "%s: OK\n", g.config)
 			var expired []string
 			for _, r := range cfg.Ignore {
 				if r.Expired(now) {
@@ -202,11 +201,11 @@ else 0.`,
 				}
 			}
 			if n := len(cfg.Ignore); n > 0 {
-				fmt.Printf("  %d ignore rule%s, %d expired\n", n, plural(n), len(expired))
+				fmt.Fprintf(out, "  %d ignore rule%s, %d expired\n", n, plural(n), len(expired))
 			}
 			warnings = append(warnings, expired...)
 			for _, w := range warnings {
-				fmt.Println("  warning:", w)
+				fmt.Fprintln(out, "  warning:", w)
 			}
 			if len(warnings) > 0 {
 				return exitError{exitWarnings}

@@ -529,7 +529,7 @@ gofmt -l . && go vet ./... && go test ./...
 
 ### Test coverage
 
-About 75% of statements are covered by the unit tests. To measure it:
+About 85% of statements are covered by the unit tests. To measure it:
 
 ```sh
 go test -coverpkg=./... -coverprofile=cover.out ./... && go tool cover -func=cover.out | tail -1
@@ -544,14 +544,14 @@ Well covered:
 - The system rules (reboot required, newer kernel not running, end of life, stale apt lists) and the escalation of security updates after `policy.escalate_after`.
 - Exit codes and the Nagios line.
 - The `run`, `scan` and `cve` commands end to end, on a synthetic Debian 12 host: system files under a temporary directory, a fake `apt-get` and `apt-cache`, and cached vulnerability data. This covers the first and second runs' diffs, `--dry-run` and the exit codes.
+- `db status` and `db update` on the same cached data, including stale feeds, and `config check` with ignore rules, warnings, invalid configs and a config file not owned by root.
 
 Covered by the [integration tests](#integration-tests) rather than the unit tests:
 
 - Running the real apt-get and downloading the vulnerability feeds, through `run`, on every supported release.
 
-Not covered by automated tests, but checked by hand on real hosts (see [Supported systems](#supported-systems)):
+Not covered by automated tests, but checked by hand on a real host (see [Supported systems](#supported-systems)):
 
-- The `db` and `config` commands.
 - Ubuntu Pro. On Ubuntu 24.04 with Ubuntu Pro, aptwatch found the same pending security updates, at the same versions, as `pro security-status`.
 
 aptwatch reads the output of `apt-get -s`, which apt doesn't promise to keep stable, as well as the Ubuntu and Debian vulnerability feeds. A change to any of these formats in a later release could stop updates or CVEs being recognised. After a major apt upgrade, compare a report with `apt list --upgradable`, or with `pro security-status` on Ubuntu.

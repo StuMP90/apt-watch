@@ -34,6 +34,11 @@ func (h Host) run(ctx context.Context, c runx.Cmd) (runx.Result, error) {
 	return h.Run(ctx, c)
 }
 
+// OSRelease reads the host's /etc/os-release.
+func (h Host) OSRelease() (OSRelease, error) {
+	return ReadOSRelease(h.path("/etc/os-release"))
+}
+
 // Collect gathers the inventory. Only failing to read the dpkg database
 // is fatal; other problems are returned as warnings.
 func (h Host) Collect(ctx context.Context) (*Inventory, []string, error) {
@@ -60,7 +65,7 @@ func (h Host) Collect(ctx context.Context) (*Inventory, []string, error) {
 	if sys.Hostname = h.Hostname; sys.Hostname == "" {
 		sys.Hostname, _ = os.Hostname()
 	}
-	if sys.OS, err = ReadOSRelease(h.path("/etc/os-release")); err != nil {
+	if sys.OS, err = h.OSRelease(); err != nil {
 		warn("os-release: %v", err)
 	}
 	if sys.OS.Codename != "" {

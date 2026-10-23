@@ -52,6 +52,10 @@ var g struct {
 // sys is the system the commands check; tests replace it.
 var sys collect.Host
 
+// checkPerms checks the config file's owner and mode; tests, which can't
+// create root-owned files, replace it.
+var checkPerms = config.CheckPerms
+
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	err := newRoot().ExecuteContext(ctx)
