@@ -114,7 +114,9 @@ func (r *Report) Text(w io.Writer) error {
 	tw.Flush()
 
 	// Changes
-	if cs := r.changes(); len(cs) > 0 {
+	if r.firstRun() {
+		p("\nChanges since last run\n  %s\n", firstRunLine)
+	} else if cs := r.changes(); len(cs) > 0 {
 		p("\nChanges since last run\n")
 		for _, c := range cs {
 			p("  %-10s %-10s %s\n", c.Label, "["+c.Severity.Label()+"]", c.Title)
@@ -252,6 +254,12 @@ func (r *Report) systemRows() []row {
 	add("Checked", r.Generated.Local().Format("2006-01-02 15:04 MST")+" by "+r.Tool)
 	return rows
 }
+
+// firstRunLine replaces "Changes since last run" when there is no history,
+// rather than listing every finding as new.
+const firstRunLine = "First run: no previous run to compare with."
+
+func (r *Report) firstRun() bool { return r.Diff != nil && r.Diff.FirstRun }
 
 // change is a line of "Changes since last run".
 type change struct {

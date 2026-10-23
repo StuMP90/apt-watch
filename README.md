@@ -247,7 +247,7 @@ $ echo $?
 `run` and `scan` write one report. In order, it contains:
 
 1. **A summary line**, e.g. `web01: 2 CRITICAL, 1 HIGH — 5 updates pending (3 security) — reboot required`. The HTML page also uses it as its title, so it works as an email subject.
-2. **Changes since the last run** (`run` only): new, escalated and resolved findings.
+2. **Changes since the last run** (`run` only): new, escalated and resolved findings. On the first run, with no saved state, this section says so in one line instead of listing every finding as new.
 3. **Findings, by severity.** Each one shows the CVEs it covers, KEV (★) and EPSS, how long the fix has been pending, and the command that fixes it.
 4. **Recent CVEs fixed in third-party packages.** These come from the changelogs, so you can see that, for example, last week's PHP CVEs are already patched.
 5. **Pending updates**, security and other.

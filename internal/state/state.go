@@ -111,6 +111,7 @@ type Resolved struct {
 
 // Diff is how the current findings compare with the previous run.
 type Diff struct {
+	FirstRun   bool       `json:"first_run,omitempty"` // no previous run to compare with
 	New        []string   `json:"new"`
 	Escalated  []string   `json:"escalated"`
 	Resolved   []Resolved `json:"resolved"`
@@ -127,7 +128,7 @@ func (d *Diff) IsEscalated(key string) bool { return slices.Contains(d.Escalated
 // prunes resolved entries older than keepResolved, and returns the diff.
 // Call Annotate (and any escalation) first.
 func (s *State) Update(fs []risk.Finding, now time.Time, keepResolved time.Duration) Diff {
-	var d Diff
+	d := Diff{FirstRun: s.LastRun.IsZero()}
 	current := make(map[string]bool, len(fs))
 	for _, f := range fs {
 		current[f.Key] = true

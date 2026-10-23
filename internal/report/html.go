@@ -16,6 +16,7 @@ func (r *Report) HTML(w io.Writer) error {
 		Summary:  r.Summary(),
 		Highest:  r.Highest(),
 		System:   r.systemRows(),
+		FirstRun: r.firstRun(),
 		Changes:  r.changes(),
 		Findings: risk.AtLeast(risk.Active(r.Findings), risk.Low),
 		Ignored:  risk.Suppressed(r.Findings),
@@ -30,6 +31,7 @@ type htmlData struct {
 	Summary  string
 	Highest  risk.Severity
 	System   []row
+	FirstRun bool
 	Changes  []change
 	Findings []risk.Finding
 	Ignored  []risk.Finding
@@ -128,7 +130,11 @@ const htmlSrc = `<!doctype html>
 {{- end}}
 </table></div>
 
-{{- if .Changes}}
+{{- if .FirstRun}}
+
+<h2>Changes since last run</h2>
+<p class="muted">First run: no previous run to compare with.</p>
+{{- else if .Changes}}
 
 <h2>Changes since last run</h2>
 <div class="scroll"><table>

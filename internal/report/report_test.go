@@ -77,6 +77,26 @@ func TestFormats(t *testing.T) {
 	}
 }
 
+func TestFirstRun(t *testing.T) {
+	r := sample()
+	r.Diff.FirstRun = true
+	var text, html strings.Builder
+	if err := r.Text(&text); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.HTML(&html); err != nil {
+		t.Fatal(err)
+	}
+	for name, out := range map[string]string{"text": text.String(), "html": html.String()} {
+		if !strings.Contains(out, firstRunLine) {
+			t.Errorf("%s: missing %q", name, firstRunLine)
+		}
+		if strings.Contains(out, "NEW") {
+			t.Errorf("%s: lists findings as NEW on a first run", name)
+		}
+	}
+}
+
 func TestSuppressed(t *testing.T) {
 	r := sample()
 	r.Findings[0].Suppressed = &risk.Suppression{Rule: "CVE-1", Reason: "not exposed", Until: risk.Date{Time: time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)}}

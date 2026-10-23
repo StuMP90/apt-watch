@@ -23,13 +23,13 @@ func TestLifecycle(t *testing.T) {
 	b := risk.Finding{Key: "b", Severity: risk.Low}
 
 	d := run(t0, a, b)
-	if !reflect.DeepEqual(d.New, []string{"a", "b"}) || len(d.Resolved) != 0 {
+	if !d.FirstRun || !reflect.DeepEqual(d.New, []string{"a", "b"}) || len(d.Resolved) != 0 {
 		t.Fatalf("run 1: %+v", d)
 	}
 
 	a.Severity = risk.High
 	d = run(t0.Add(day), a)
-	if !reflect.DeepEqual(d.Escalated, []string{"a"}) || len(d.Resolved) != 1 || d.Resolved[0].Key != "b" {
+	if d.FirstRun || !reflect.DeepEqual(d.Escalated, []string{"a"}) || len(d.Resolved) != 1 || d.Resolved[0].Key != "b" {
 		t.Fatalf("run 2: %+v", d)
 	}
 	if got := s.Findings["a"].FirstSeen; !got.Equal(t0) {
