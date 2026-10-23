@@ -44,7 +44,7 @@ The full design is in [SPEC.md](SPEC.md).
 | Debian | 12 (bookworm), 13 (trixie) |
 | Ubuntu | 22.04, 24.04, 26.04 LTS, with or without Ubuntu Pro |
 
-So far aptwatch has been run on real hosts with Debian 13 (trixie) and Ubuntu 24.04 LTS with Ubuntu Pro only. The other releases are covered by unit tests on synthetic apt output in their apt versions' formats, not yet by real-host runs.
+So far aptwatch has been run on real hosts with Debian 13 (trixie) and Ubuntu 24.04 LTS with Ubuntu Pro only. Every supported release is covered by unit tests on synthetic apt output in its apt version's format, and by the [integration tests](#integration-tests) in containers, but the others haven't yet been run on real hosts.
 
 If aptwatch misses updates or CVEs on your system, or gets something else wrong, please [raise an issue](https://github.com/StuMP90/apt-watch/issues). Include the release, the apt version, and the output of `apt list --upgradable` or `pro security-status`.
 
@@ -543,10 +543,16 @@ Well covered:
 - The text, HTML and JSON reports, with golden files.
 - The system rules (reboot required, newer kernel not running, end of life, stale apt lists) and the escalation of security updates after `policy.escalate_after`.
 - Exit codes and the Nagios line.
+- The `run`, `scan` and `cve` commands end to end, on a synthetic Debian 12 host: system files under a temporary directory, a fake `apt-get` and `apt-cache`, and cached vulnerability data. This covers the first and second runs' diffs, `--dry-run` and the exit codes.
 
-Not covered by automated tests:
+Covered by the [integration tests](#integration-tests) rather than the unit tests:
 
-- The end-to-end path inside the unit tests: running apt-get, downloading the vulnerability feeds and putting the pieces together. The functions that read the system files are tested on temporary files. The [integration tests](#integration-tests) cover `run` on every supported release, and the `scan`, `cve`, `db` and `config` commands are covered by runs on real hosts (see [Supported systems](#supported-systems)). On Ubuntu 24.04 with Ubuntu Pro, aptwatch found the same pending security updates, at the same versions, as `pro security-status`.
+- Running the real apt-get and downloading the vulnerability feeds, through `run`, on every supported release.
+
+Not covered by automated tests, but checked by hand on real hosts (see [Supported systems](#supported-systems)):
+
+- The `db` and `config` commands.
+- Ubuntu Pro. On Ubuntu 24.04 with Ubuntu Pro, aptwatch found the same pending security updates, at the same versions, as `pro security-status`.
 
 aptwatch reads the output of `apt-get -s`, which apt doesn't promise to keep stable, as well as the Ubuntu and Debian vulnerability feeds. A change to any of these formats in a later release could stop updates or CVEs being recognised. After a major apt upgrade, compare a report with `apt list --upgradable`, or with `pro security-status` on Ubuntu.
 

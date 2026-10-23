@@ -176,11 +176,11 @@ func cutLast(s, sep string) (before, after string, found bool) {
 // SimulateUpgrade runs apt-get -s dist-upgrade twice: once with phased
 // updates included (to get their versions), once without (to learn which
 // ones apt is deferring). Needs no root.
-func SimulateUpgrade(ctx context.Context) (*Simulation, error) {
+func (h Host) SimulateUpgrade(ctx context.Context) (*Simulation, error) {
 	base := []string{"-s", "-q", "-o", "Debug::NoLocking=true"}
 	run := func(extra ...string) (*Simulation, error) {
 		args := append(append(append([]string{}, base...), extra...), "dist-upgrade")
-		res, err := runx.Run(ctx, runx.Cmd{Name: "apt-get", Args: args, Timeout: 5 * time.Minute})
+		res, err := h.run(ctx, runx.Cmd{Name: "apt-get", Args: args, Timeout: 5 * time.Minute})
 		if err != nil {
 			return nil, err
 		}
@@ -225,7 +225,7 @@ func MergePhased(all, normal *Simulation) *Simulation {
 
 // ResolveSources fills in Source and SourceVersion of each update from
 // apt-cache show. Updates it can't resolve are left empty.
-func ResolveSources(ctx context.Context, updates []Update) error {
+func (h Host) ResolveSources(ctx context.Context, updates []Update) error {
 	if len(updates) == 0 {
 		return nil
 	}
@@ -233,7 +233,7 @@ func ResolveSources(ctx context.Context, updates []Update) error {
 	for _, u := range updates {
 		args = append(args, u.Package+":"+u.Arch+"="+u.Candidate)
 	}
-	res, err := runx.Run(ctx, runx.Cmd{Name: "apt-cache", Args: args, Timeout: 2 * time.Minute})
+	res, err := h.run(ctx, runx.Cmd{Name: "apt-cache", Args: args, Timeout: 2 * time.Minute})
 	// apt-cache fails only when none of the packages is found.
 	if err != nil && len(res.Stdout) == 0 {
 		return err

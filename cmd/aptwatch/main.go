@@ -49,7 +49,28 @@ var g struct {
 	nagios   bool // errors are reported as a plugin's UNKNOWN
 }
 
+// sys is the system the commands check; tests replace it.
+var sys collect.Host
+
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	err := newRoot().ExecuteContext(ctx)
+	stop()
+	var ee exitError
+	switch {
+	case err == nil:
+	case errors.As(err, &ee):
+		os.Exit(ee.code)
+	case g.nagios:
+		fmt.Println("UNKNOWN - aptwatch:", err)
+		os.Exit(exitFatal)
+	default:
+		fmt.Fprintln(os.Stderr, "aptwatch:", err)
+		os.Exit(exitFatal)
+	}
+}
+
+func newRoot() *cobra.Command {
 	root := &cobra.Command{
 		Use:           "aptwatch",
 		Short:         "Watch a Debian/Ubuntu host for pending updates and risks",
@@ -67,22 +88,7 @@ func main() {
 		Short: "Print the version",
 		Run:   func(*cobra.Command, []string) { fmt.Println("aptwatch", version) },
 	})
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	err := root.ExecuteContext(ctx)
-	stop()
-	var ee exitError
-	switch {
-	case err == nil:
-	case errors.As(err, &ee):
-		os.Exit(ee.code)
-	case g.nagios:
-		fmt.Println("UNKNOWN - aptwatch:", err)
-		os.Exit(exitFatal)
-	default:
-		fmt.Fprintln(os.Stderr, "aptwatch:", err)
-		os.Exit(exitFatal)
-	}
+	return root
 }
 
 func setupLogging() error {
@@ -169,7 +175,7 @@ type host struct {
 // gather collects the inventory, with the third-party changelogs if
 // configured, and opens the vulnerability data.
 func gather(ctx context.Context, cfg *config.Config, now time.Time, refreshVuln bool) (*host, error) {
-	inv, warnings, err := collect.Collect(ctx)
+	inv, warnings, err := sys.Collect(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -426,11 +432,11 @@ there is none yet), 2 if any is unknown or there were warnings, else 0.`,
 			}
 			switch format {
 			case "json":
-				err = rep.JSON(os.Stdout)
+				err = rep.JSON(cmd.OutOrStdout())
 			case "html":
-				err = rep.HTML(os.Stdout)
+				err = rep.HTML(cmd.OutOrStdout())
 			default:
-				err = rep.Text(os.Stdout)
+				err = rep.Text(cmd.OutOrStdout())
 			}
 			if err != nil {
 				return err

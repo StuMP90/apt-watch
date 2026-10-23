@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+
+	"aptwatch/internal/runx"
 )
 
 // Inventory is everything collected in one run.
@@ -15,47 +17,66 @@ type Inventory struct {
 	Changelogs map[string]*Changelog `json:"-"`
 }
 
+// Host is where Collect reads the system from. The zero Host is the
+// running system; tests point it at synthetic files and a fake apt.
+type Host struct {
+	Root     string                                              // prefix of the system files; "" for /
+	Run      func(context.Context, runx.Cmd) (runx.Result, error) // runs apt-get and apt-cache; nil for runx.Run
+	Hostname string                                              // "" for os.Hostname
+}
+
+func (h Host) path(p string) string { return h.Root + p }
+
+func (h Host) run(ctx context.Context, c runx.Cmd) (runx.Result, error) {
+	if h.Run == nil {
+		return runx.Run(ctx, c)
+	}
+	return h.Run(ctx, c)
+}
+
 // Collect gathers the inventory. Only failing to read the dpkg database
 // is fatal; other problems are returned as warnings.
-func Collect(ctx context.Context) (*Inventory, []string, error) {
+func (h Host) Collect(ctx context.Context) (*Inventory, []string, error) {
 	var warnings []string
 	warn := func(format string, a ...any) { warnings = append(warnings, fmt.Sprintf(format, a...)) }
 
-	pkgs, err := ReadDpkgStatus(DpkgStatusPath)
+	pkgs, err := ReadDpkgStatus(h.path(DpkgStatusPath))
 	if err != nil {
 		return nil, nil, fmt.Errorf("reading package database: %w", err)
 	}
 	inv := &Inventory{Packages: pkgs}
 
-	if inv.Simulation, err = SimulateUpgrade(ctx); err != nil {
+	if inv.Simulation, err = h.SimulateUpgrade(ctx); err != nil {
 		warn("apt simulation failed: %v", err)
 		inv.Simulation = &Simulation{}
-	} else if err := ResolveSources(ctx, inv.Simulation.Updates); err != nil {
+	} else if err := h.ResolveSources(ctx, inv.Simulation.Updates); err != nil {
 		warn("resolving source packages of updates: %v", err)
 	}
-	if err := AddRepos(AptListsDir, inv.Packages); err != nil {
+	if err := AddRepos(h.path(AptListsDir), inv.Packages); err != nil {
 		warn("package repositories: %v", err)
 	}
 
 	sys := &inv.System
-	sys.Hostname, _ = os.Hostname()
-	if sys.OS, err = ReadOSRelease("/etc/os-release"); err != nil {
+	if sys.Hostname = h.Hostname; sys.Hostname == "" {
+		sys.Hostname, _ = os.Hostname()
+	}
+	if sys.OS, err = ReadOSRelease(h.path("/etc/os-release")); err != nil {
 		warn("os-release: %v", err)
 	}
 	if sys.OS.Codename != "" {
-		if sys.EOL, err = LookupEOL("/usr/share/distro-info", sys.OS.ID, sys.OS.Codename); err != nil {
+		if sys.EOL, err = LookupEOL(h.path("/usr/share/distro-info"), sys.OS.ID, sys.OS.Codename); err != nil {
 			warn("end-of-life lookup: %v", err)
 		}
 	}
-	if sys.Reboot, err = ReadReboot("/run/reboot-required"); err != nil {
+	if sys.Reboot, err = ReadReboot(h.path("/run/reboot-required")); err != nil {
 		warn("reboot-required: %v", err)
 	}
-	if sys.Kernel.Running, err = RunningKernel(); err != nil {
+	if sys.Kernel.Running, err = RunningKernel(h.path("/proc/sys/kernel/osrelease")); err != nil {
 		warn("running kernel: %v", err)
 	} else {
 		sys.Kernel.Newest = NewestKernel(pkgs, sys.Kernel.Running)
 	}
-	if sys.ListsUpdated, err = ListsUpdated(AptListsDir); err != nil {
+	if sys.ListsUpdated, err = ListsUpdated(h.path(AptListsDir)); err != nil {
 		warn("apt lists: %v", err)
 	}
 	return inv, warnings, nil

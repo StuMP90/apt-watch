@@ -212,8 +212,9 @@ func kernelFlavour(rel string) string {
 	return ""
 }
 
-// RunningKernel returns the kernel release, as uname -r prints it.
-func RunningKernel() (string, error) {
-	b, err := os.ReadFile("/proc/sys/kernel/osrelease")
+// RunningKernel returns the kernel release, as uname -r prints it, from
+// /proc/sys/kernel/osrelease.
+func RunningKernel(path string) (string, error) {
+	b, err := os.ReadFile(path)
 	return strings.TrimSpace(string(b)), err
 }
