@@ -20,9 +20,9 @@ type Inventory struct {
 // Host is where Collect reads the system from. The zero Host is the
 // running system; tests point it at synthetic files and a fake apt.
 type Host struct {
-	Root     string                                              // prefix of the system files; "" for /
+	Root     string                                               // prefix of the system files; "" for /
 	Run      func(context.Context, runx.Cmd) (runx.Result, error) // runs apt-get and apt-cache; nil for runx.Run
-	Hostname string                                              // "" for os.Hostname
+	Hostname string                                               // "" for os.Hostname
 }
 
 func (h Host) path(p string) string { return h.Root + p }
