@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"syscall"
 	"time"
 
 	"aptwatch/internal/debver"
@@ -353,6 +354,11 @@ func debChangelog(ctx context.Context, deb string) ([]ChangelogEntry, error) {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, "--fsys-tarfile", deb)
 	cmd.Env = []string{"PATH=" + runx.Path, "LC_ALL=C"}
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.Cancel = func() error {
+		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+	}
+	cmd.WaitDelay = 2 * time.Second
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	out, err := cmd.StdoutPipe()
@@ -363,6 +369,7 @@ func debChangelog(ctx context.Context, deb string) ([]ChangelogEntry, error) {
 		return nil, err
 	}
 	e, perr := tarChangelog(out)
+	out.Close()
 	cancel() // done reading: don't wait for the rest of the archive
 	werr := cmd.Wait()
 	if perr != nil {
